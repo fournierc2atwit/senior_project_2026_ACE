@@ -17,22 +17,22 @@ Reymond Sanchez - Game Logic Developer and AI Systems Lead
 # Installation
 
 1. Clone the repository
-    git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
+    - git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
 
 2. Create a virtual environment
-    python -m venv venv
+    - python -m venv venv
 
     # Activate on Windows
-    venv\Scripts\activate
+    - venv\Scripts\activate
 
     # Activate on Mac/Linux
-    source venv/bin/activate
+    - source venv/bin/activate
 
 3. Install dependencies
-    pip install -r requirements.txt
+    - pip install -r requirements.txt
 
 4. Run the game
-    python main.py
+    - python main.py
 
 # Features
     - Full Blackjack gameplay loop (deal, hit, stand, double down)
