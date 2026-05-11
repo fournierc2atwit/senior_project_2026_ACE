@@ -6,9 +6,9 @@ A.C.E is an AI-assisted Blackjack training game that helps users learn Blackjack
 
 # Team Members
 
-Colby Fournier - Game Logic Developer and UI Designer
-Cisco Harbeck - Game Logic Developer and Backend/Database Lead
-Reymond Sanchez - Game Logic Developer and AI Systems Lead
+- Colby Fournier - Game Logic Developer and UI Designer
+- Cisco Harbeck - Game Logic Developer and Backend/Database Lead
+- Reymond Sanchez - Game Logic Developer and AI Systems Lead
 
 # Requirements
     - Python 3.8 or higher
