@@ -1,5 +1,4 @@
-from game.card import Card
-
+from backend.game.card import Card
 class Hand:
 
     # Goals:
@@ -22,20 +21,19 @@ class Hand:
         self.cards = []
     
     def get_value(self):
-        # Calculate total value of hand, accounting for Aces
-        total = sum(card.get_value() for card in self.cards)
-        aces  = sum(1 for card in self.cards if card.rank == "A")
+        total = 0
+        aces = 0
+
         for card in self.cards:
-            val = card.get_value()
-            total += val
-            if card.rank == 'Ace':
+            total += card.get_value()
+
+            if card.rank == "Ace":
                 aces += 1
-        
-        # Adjust for Aces if total is over 21
+
         while total > 21 and aces > 0:
-            total -= 10  # Treat one Ace as 1 instead of 11
+            total -= 10
             aces -= 1
-        
+
         return total
     
     def is_soft(self):
@@ -55,23 +53,25 @@ class Hand:
     def is_blackjack(self):
         # Returns True if hand is a blackjack (exactly 2 cards: an Ace and a 10-value card)
         return len(self.cards) == 2 and self.get_value() == 21
+
+    def is_pair(self):
+        return len(self.cards) == 2 and self.cards[0].rank == self.cards[1].rank
     
     def card_count(self):
         # Returns the number of cards in the hand
         return len(self.cards)
     
     # For UI: Return a string representation of the hand (e.g. "A♠ 10♦")
-    def short_names(self):
-        # Returns a list of short card name strings for the UI.
-        # Example: ['A♠', '9♥']
+    def short_names(self, hide_second=False):
         names = [card.short_name() for card in self.cards]
+
         if hide_second and len(names) >= 2:
-            names[1] = "??"
+            names[1] = "?"
+
         return names
-    
+        
     def __str__(self):
-        card_str = ", ".join(str(card) for card in self.cards)
-        return f"{card_str} (Total: {self.get_value()})"
+        return f"{' '.join(self.short_names())} (Total: {self.get_value()})"
     
     def __len__(self):
         return len(self.cards)
