@@ -130,7 +130,7 @@ senior_project_2026_ACE/
 - Responsive game table visualization
 
 ## Data & Statistics
-- SQLite stat tracking (hands played, win rate, net chip balance)
+- PostgreSQL stat tracking (hands played, win rate, net chip balance)
 - Session history storage and retrieval
 - Player progress tracking across multiple sessions
 
