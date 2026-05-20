@@ -145,24 +145,6 @@ senior_project_2026_ACE/
 | Frontend | React | Latest |
 | Build Tool | Create React App or Vite | TBD |
 
-# Development Status
-
-- ✅ Game Logic: Complete (core blackjack rules, dealer AI, hand evaluation)
-- ✅ AI Strategy: Complete (basic strategy lookup table)
-- ✅ Database: Schema designed, stats tracking ready
-- ⚠️ Flask API: Partial (endpoints in progress)
-- ⚠️ React Frontend: Scaffolded (components exist, integration ongoing)
-- 🚧 Post-Move Feedback UI: In progress
-- 🚧 Statistics Dashboard: In progress
-
-# Project Timeline
-
-**MVP Deadline:** June 10, 2026
-- Phase 1 (May 20 - June 10): Core functionality and playable game
-- Phase 2 (June 10 - June 30): Features and polish
-- Phase 3 (June 30 - July 15): Testing and documentation
-
-For detailed design information, see [DESIGN_DOCUMENT.md](DESIGN_DOCUMENT.md)
 
 # Contributing
 
