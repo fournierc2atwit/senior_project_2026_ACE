@@ -13,6 +13,9 @@ class Player:
         self.chips = chips
         self.hand = Hand()
         self.bet = 0
+        self.wins = 0
+        self.losses = 0
+        self.pushes = 0
 
     def place_bet(self, amount):
         # Place a bet for the current round
@@ -20,7 +23,6 @@ class Player:
         # Returns True if bet is successfully placed, False if insufficient chips
         if amount <= 0:
             raise ValueError("Bet amount must be positive")
-            return False
         if amount > self.chips:
             print(f"{self.name} does not have enough chips. Current chips: {self.chips}")
             return False
@@ -44,6 +46,7 @@ class Player:
     
     # Outcome methods
     def win(self, blackjack=False):
+        self.wins += 1
         # Player wins the round
         # Standard win pays 1:1, blackjack pays 3:2
         if blackjack:
@@ -53,9 +56,11 @@ class Player:
         self.chips += self.bet + payout  # Return original bet + winnings
         self.bet = 0
     def lose(self):
+        self.losses += 1
         # Player loses the round, bet is already deducted
         self.bet = 0
     def push(self):
+        self.pushes += 1
         # Round is a tie, return the bet to player's chips
         self.chips += self.bet
         self.bet = 0

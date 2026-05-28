@@ -2,6 +2,8 @@ from backend.game.deck import Deck
 from backend.game.player import Player
 from backend.game.hand import Hand
 from backend.game.rules import Rules
+from backend.database.db import create_tables
+from backend.database.stats import save_stats, get_player_stats
 
 # Display the current hands for both the player and dealer
 def show_hands(player, dealer, hide_dealer=True):
@@ -86,22 +88,50 @@ def play_round(player, deck):
 
 # Main game loop
 def main():
+    # Creates database table if needed
+    create_tables()
     deck = Deck()
-    player = Player("Player")
 
-    print("Welcome to A.C.E. Blackjack!")
+    name = input("Enter your name: ")
+
+    saved_stats = get_player_stats(name)
+
+    if saved_stats:
+        player_name, chips, wins, losses, pushes, games_played = saved_stats
+
+        player = Player(player_name, chips)
+        player.wins = wins
+        player.losses = losses
+        player.pushes = pushes
+
+        print(f"Welcome back, {player.name}!")
+        print(f"Loaded chips: {player.chips}")
+    else:
+        player = Player(name)
+        print(f"New player created: {player.name}")
+
+        print("Welcome to A.C.E. Blackjack!")
 
     # Continue playing while player still has chips
     while player.chips > 0:
         print(f"\nChips: {player.chips}")
         play_round(player, deck)
-
         again = input("Play again? yes/no: ").lower().strip()
         if again != "yes":
             break
 
     print("Game over.")
     print(f"Final chips: {player.chips}")
+
+    # Save player stats to database
+    save_stats(
+        player.name,
+        player.chips,
+        player.wins,
+        player.losses,
+        player.pushes
+    )
+    print("Stats saved to database.")
 
 if __name__ == "__main__":
     main()
