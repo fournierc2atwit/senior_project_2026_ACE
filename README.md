@@ -11,35 +11,145 @@ A.C.E is an AI-assisted Blackjack training game that helps users learn Blackjack
 - Reymond Sanchez - Game Logic Developer and AI Systems Lead
 
 # Requirements
-    - Python 3.8 or higher
-    - pip 
+- Python 3.8 or higher
+- Node.js 14+ and npm (for frontend)
+- pip
 
 # Installation
 
 1. Clone the repository
-    - git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
+   ```bash
+   git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
+   cd senior_project_2026_ACE
+   ```
 
-2. Create a virtual environment
-    - python -m venv venv
+2. Set up backend (Python/Flask)
+   ```bash
+   # Create virtual environment
+   python -m venv venv
+   
+   # Activate on Windows
+   venv\Scripts\activate
+   
+   # Activate on Mac/Linux
+   source venv/bin/activate
+   
+   # Install dependencies
+   pip install -r backend/requirements.txt
+   ```
 
-    # Activate on Windows
-    - venv\Scripts\activate
+3. Set up frontend (React)
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   ```
 
-    # Activate on Mac/Linux
-    - source venv/bin/activate
+4. Run the application
+   ```bash
+   # Start backend (from project root)
+   python backend/app.py
+   
+   # In another terminal, start frontend
+   cd frontend
+   npm start
+   ```
 
-3. Install dependencies
-    - pip install -r requirements.txt
+The application will be available at `http://localhost:3000`
 
-4. Run the game
-    - python main.py
+# Project Structure
+
+```
+senior_project_2026_ACE/
+├── backend/
+│   ├── app.py                    # Flask API server and routes
+│   ├── requirements.txt          # Python dependencies
+│   ├── game/                     # Core game logic
+│   │   ├── __init__.py
+│   │   ├── card.py              # Card class and operations
+│   │   ├── deck.py              # Deck management and card dealing
+│   │   ├── hand.py              # Hand evaluation and game logic
+│   │   ├── player.py            # Player state and chip management
+│   │   └── rules.py             # Casino rules (dealer logic, win determination)
+│   ├── ai/                       # AI Strategy Engine
+│   │   ├── __init__.py
+│   │   ├── strategy.py          # Basic strategy lookup table and recommendations
+│   │   └── advise.py            # AI reasoning and explanation generation
+│   └── database/                # Data persistence layer
+│       ├── __init__.py
+│       ├── db.py                # SQLite database initialization and connection
+│       └── stats.py             # Player statistics and session tracking
+│
+├── frontend/
+│   ├── public/                  # Static assets
+│   ├── src/
+│   │   ├── index.js            # React entry point
+│   │   ├── App.jsx             # Main application component and routing
+│   │   ├── components/         # Reusable React components
+│   │   │   ├── Table.jsx       # Game table visualization
+│   │   │   ├── Hand.jsx        # Hand display (player and dealer)
+│   │   │   ├── Card.jsx        # Individual card component
+│   │   │   ├── Menu.jsx        # Main menu and game mode selection
+│   │   │   ├── Hud.jsx         # Heads-up display (chips, bet, stats)
+│   │   │   └── Tutorial.jsx    # Interactive tutorial mode
+│   │   └── [styling TBD]       # CSS/CSS-in-JS (to be finalized)
+│   ├── package.json            # npm dependencies
+│   └── .gitignore
+│
+├── assets/
+│   ├── cards/                  # Card images and sprites
+│   └── ui/                     # UI graphics and icons
+│
+├── docs/
+│   ├── Project Proposal.pdf
+│   └── Project Plan.pdf
+│
+├── README.md
+└── .gitignore
+
+```
 
 # Features
-    - Full Blackjack gameplay loop (deal, hit, stand, double down)
-    - Dealer AI following standard casino rules
-    - Virtual chip and bankroll system
-    - Real-time basic strategy hint engine
-    - Post-round recap with optimal play explanation
-    - SQLite stat tracking (hands played, win rate, net chip balance)
-    - Guided tutorial mode
-    - Help and glossary screen
+
+## Core Gameplay
+- Full Blackjack gameplay loop (deal, hit, stand, double down)
+- Dealer AI following standard casino rules
+- Virtual chip and bankroll system
+- Hand management with bust/blackjack detection
+
+## AI & Learning
+- Real-time basic strategy hint engine
+- Post-round recap with optimal play explanation
+- Educational feedback when suboptimal moves are made
+- Statistically optimal move recommendations for every hand scenario
+
+## Player Experience
+- Web-based React UI (currently in development)
+- Guided tutorial mode for new players
+- Help and glossary screen
+- Responsive game table visualization
+
+## Data & Statistics
+- PostgreSQL stat tracking (hands played, win rate, net chip balance)
+- Session history storage and retrieval
+- Player progress tracking across multiple sessions
+
+# Technology Stack
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Backend | Python | 3.8+ |
+| API Server | Flask | 3.0.3 |
+| CORS Support | Flask-CORS | 4.0.1 |
+| Database | SQLite | Built-in |
+| Frontend | React | Latest |
+| Build Tool | Create React App or Vite | TBD |
+
+
+# Contributing
+
+See team members section above. For development guidelines, refer to code comments and the design document.
+
+# License
+
+[To be determined]
