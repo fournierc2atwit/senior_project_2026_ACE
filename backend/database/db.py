@@ -22,7 +22,8 @@ def create_tables():
             wins INTEGER NOT NULL,
             losses INTEGER NOT NULL,
             pushes INTEGER NOT NULL,
-            games_played INTEGER NOT NULL
+            games_played INTEGER NOT NULL,
+            bankrupts INTEGER NOT NULL
         );
     """)
 

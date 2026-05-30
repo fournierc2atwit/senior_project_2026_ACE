@@ -23,17 +23,13 @@ class Hand:
     def get_value(self):
         total = 0
         aces = 0
-
         for card in self.cards:
             total += card.get_value()
-
             if card.rank == "Ace":
                 aces += 1
-
         while total > 21 and aces > 0:
             total -= 10
             aces -= 1
-
         return total
     
     def is_soft(self):

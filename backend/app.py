@@ -91,18 +91,20 @@ def main():
     # Creates database table if needed
     create_tables()
     deck = Deck()
+    print("Welcome to A.C.E. Blackjack!")
 
     name = input("Enter your name: ")
 
     saved_stats = get_player_stats(name)
 
     if saved_stats:
-        player_name, chips, wins, losses, pushes, games_played = saved_stats
+        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved_stats
 
         player = Player(player_name, chips)
         player.wins = wins
         player.losses = losses
         player.pushes = pushes
+        player.bankrupts = bankrupts
 
         print(f"Welcome back, {player.name}!")
         print(f"Loaded chips: {player.chips}")
@@ -110,18 +112,29 @@ def main():
         player = Player(name)
         print(f"New player created: {player.name}")
 
-        print("Welcome to A.C.E. Blackjack!")
-
+    # Reset player chips if they were bankrupt last session
+    if player.chips <= 0:
+        print("You were bankrupt. Resetting chips to 1000.")
+        player.chips = Player.STARTING_CHIPS    
+        
     # Continue playing while player still has chips
     while player.chips > 0:
         print(f"\nChips: {player.chips}")
         play_round(player, deck)
         again = input("Play again? yes/no: ").lower().strip()
-        if again != "yes":
+        if again == "cash out":
+            print(f"You cashed out with {player.chips} chips.")
+            break
+        elif again != "yes":
             break
 
     print("Game over.")
     print(f"Final chips: {player.chips}")
+
+    # Track bankrupt games
+    if player.chips <= 0:
+        player.bankrupts += 1
+        print("You went bankrupt.")
 
     # Save player stats to database
     save_stats(
@@ -129,7 +142,8 @@ def main():
         player.chips,
         player.wins,
         player.losses,
-        player.pushes
+        player.pushes,
+        player.bankrupts
     )
     print("Stats saved to database.")
 
