@@ -16,6 +16,7 @@ class Player:
         self.wins = 0
         self.losses = 0
         self.pushes = 0
+        self.bankrupts = 0
 
     def place_bet(self, amount):
         # Place a bet for the current round

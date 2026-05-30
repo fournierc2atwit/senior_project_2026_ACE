@@ -1,14 +1,14 @@
 from backend.database.db import get_connection
 
-def save_stats(player_name, chips, wins, losses, pushes):
+def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
     games_played = wins + losses + pushes
     conn = get_connection()
     cur = conn.cursor()
-
     cur.execute("""
-        INSERT INTO player_stats (player_name, chips, wins, losses, pushes, games_played)
-        VALUES (%s, %s, %s, %s, %s, %s);
-    """, (player_name, chips, wins, losses, pushes, games_played))
+        INSERT INTO player_stats 
+        (player_name, chips, wins, losses, pushes, games_played, bankrupts)
+        VALUES (%s, %s, %s, %s, %s, %s, %s);
+    """, (player_name, chips, wins, losses, pushes, games_played, bankrupts))
 
     conn.commit()
     cur.close()
@@ -20,7 +20,7 @@ def get_latest_stats():
 
     # Gets the most recent stats saved
     cur.execute("""
-        SELECT player_name, chips, wins, losses, pushes, games_played
+        SELECT player_name, chips, wins, losses, pushes, games_played, bankrupts
         FROM player_stats
         ORDER BY id DESC
         LIMIT 1;
@@ -38,7 +38,7 @@ def get_player_stats(player_name):
 
     # Gets latest saved stats for this player
     cur.execute("""
-        SELECT player_name, chips, wins, losses, pushes, games_played
+        SELECT player_name, chips, wins, losses, pushes, games_played, bankrupts
         FROM player_stats
         WHERE LOWER(player_name) = LOWER(%s)
         ORDER BY id DESC
