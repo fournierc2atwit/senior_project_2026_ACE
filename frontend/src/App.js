@@ -1,25 +1,20 @@
-import logo from './logo.svg';
-import './App.css';
+import { useState } from "react";
+import Menu from "./components/Menu";
+import Table from "./components/Table";
+import Stats from "./components/Stats";
+import Tutorial from "./components/Tutorial";
 
-function App() {
+export default function App() {
+  const [screen, setScreen] = useState("menu");
+
+  const navigate = (destination) => setScreen(destination);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div>
+      {screen === "menu"     && <Menu     onNavigate={navigate} />}
+      {screen === "game"     && <Table    onNavigate={navigate} />}
+      {screen === "stats"    && <Stats    onNavigate={navigate} />}
+      {screen === "tutorial" && <Tutorial onNavigate={navigate} />}
     </div>
   );
 }
-
-export default App;
