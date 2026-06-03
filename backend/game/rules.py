@@ -13,6 +13,10 @@ class Rules:
         if dealer_hand.is_blackjack() and not player_hand.is_blackjack():
             return "lose"
 
+        # Both blackjack — push
+        if player_hand.is_blackjack() and dealer_hand.is_blackjack():
+            return "push"
+
         player_total = player_hand.get_value()
         dealer_total = dealer_hand.get_value()
 
@@ -26,3 +30,8 @@ class Rules:
     @staticmethod
     def dealer_should_hit(dealer_hand):
         return dealer_hand.get_value() < 17
+
+    @staticmethod
+    def run_dealer(dealer_hand, deck):
+        while Rules.dealer_should_hit(dealer_hand):
+            dealer_hand.add_card(deck.deal())
