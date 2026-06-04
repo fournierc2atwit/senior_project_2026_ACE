@@ -30,7 +30,7 @@ app.secret_key = "ace-dev-secret-key"
 CORS(app)
 
 # Create database tables on startup if they don't exist
-#create_tables()
+create_tables()
 
 # ------------------------------------------------------------------
 # Helpers
@@ -115,8 +115,7 @@ def new_game():
     data = request.get_json() or {}
     name = data.get("name", "Player")
 
-    # saved = get_player_stats(name)
-    saved = None
+    saved = get_player_stats(name)
 
     if saved:
         player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
@@ -202,7 +201,7 @@ def hit():
     # If bust, auto-resolve the round
     if bust:
         chips = apply_outcome("lose")
-       # _persist_stats()
+        _persist_stats()
         clear_round()
 
     return jsonify({
@@ -227,7 +226,7 @@ def stand():
 
     result = Rules.determine_winner(player_hand, dealer_hand)
     chips  = apply_outcome(result)
-    #_persist_stats()
+    _persist_stats()
     clear_round()
 
     return jsonify({
@@ -265,7 +264,7 @@ def double():
 
     result = Rules.determine_winner(player_hand, dealer_hand)
     chips  = apply_outcome(result)
-    #_persist_stats()
+    _persist_stats()
     clear_round()
 
     return jsonify({
@@ -331,8 +330,7 @@ def stats():
     }
 
     # All-time stats from database
-    # saved = get_player_stats(name)
-    saved = None
+    saved = get_player_stats(name)
     if saved:
         player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
         alltime_stats = {
@@ -360,7 +358,7 @@ def save():
     Manually save the current session stats to the database.
     Called when the player exits or cashes out.
     """
-    #_persist_stats()
+    _persist_stats()
     return jsonify({ "status": "success", "message": "Stats saved." })
 
 
@@ -369,23 +367,24 @@ def save():
 # ------------------------------------------------------------------
 
 def _persist_stats():
-    pass
     """Write current session stats to the database."""
-    #chips     = session.get("chips", Player.STARTING_CHIPS)
-    #bankrupts = session.get("bankrupts", 0)
+    chips = session.get("chips", Player.STARTING_CHIPS)
+    bankrupts = session.get("bankrupts", 0)
 
-    #if chips <= 0:
-     #   bankrupts += 1
-     #   session["bankrupts"] = bankrupts
+    if chips <= 0:
+        bankrupts += 1
+        chips = Player.STARTING_CHIPS
+        session["chips"] = chips
+        session["bankrupts"] = bankrupts
 
-    #save_stats(
-     #   session.get("name", "Player"),
-      #  chips,
-       # session.get("wins", 0),
-      #  session.get("losses", 0),
-      #  session.get("pushes", 0),
-      #  bankrupts,
-    # )
+    save_stats(
+        session.get("name", "Player"),
+        chips,
+        session.get("wins", 0),
+        session.get("losses", 0),
+        session.get("pushes", 0),
+        bankrupts,
+    )
 
 def _outcome_message(result):
     messages = {
