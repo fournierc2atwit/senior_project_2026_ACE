@@ -1,4 +1,4 @@
-from database.db import get_connection
+from backend.database.db import get_connection
 
 def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
     games_played = wins + losses + pushes
@@ -50,8 +50,6 @@ def get_player_stats(player_name):
         SELECT player_name, chips, wins, losses, pushes, games_played, bankrupts
         FROM player_stats
         WHERE LOWER(player_name) = LOWER(%s)
-        ORDER BY id DESC
-        LIMIT 1;
     """, (player_name,))
 
     stats = cur.fetchone()

@@ -1,7 +1,12 @@
-from database.stats import save_stats, get_latest_stats
+from backend.database.stats import save_stats, get_latest_stats
 
-save_stats(1200, 2, 1, 0)
+save_stats(
+    "Cisco",
+    3500,
+    10,
+    3,
+    2,
+    1
+)
 
-stats = get_latest_stats()
-
-print("Latest stats:", stats)
+print(get_latest_stats())
