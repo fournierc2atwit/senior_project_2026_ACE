@@ -27,7 +27,7 @@ except ImportError:
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
-CORS(app)
+CORS(app, supports_credentials=True)
 
 # Create database tables on startup if they don't exist
 #create_tables()
