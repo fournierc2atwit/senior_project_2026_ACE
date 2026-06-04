@@ -1,10 +1,12 @@
 from database.db import get_connection
 
 def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
-    games_played = wins + losses + pushes
+    player_name = player_name.strip().lower()
 
+    games_played = wins + losses + pushes
     conn = get_connection()
     cur = conn.cursor()
+
     cur.execute("""
         INSERT INTO player_stats
         (player_name, chips, wins, losses, pushes, games_played, bankrupts)
@@ -18,10 +20,10 @@ def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
             games_played = EXCLUDED.games_played,
             bankrupts = EXCLUDED.bankrupts;
     """, (player_name, chips, wins, losses, pushes, games_played, bankrupts))
-    
-    conn.commit()
-    cur.close()
-    conn.close()
+
+    conn.commit()      
+    cur.close()        
+    conn.close() 
 
 def get_latest_stats():
     conn = get_connection()
@@ -42,10 +44,11 @@ def get_latest_stats():
     return stats
 
 def get_player_stats(player_name):
+    player_name = player_name.strip().lower()
+
     conn = get_connection()
     cur = conn.cursor()
 
-    # Gets latest saved stats for this player
     cur.execute("""
         SELECT player_name, chips, wins, losses, pushes, games_played, bankrupts
         FROM player_stats

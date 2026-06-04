@@ -114,6 +114,7 @@ def new_game():
     """
     data = request.get_json() or {}
     name = data.get("name", "Player")
+    name = name.strip().lower()
 
     saved = get_player_stats(name)
 
