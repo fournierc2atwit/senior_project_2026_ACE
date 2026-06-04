@@ -3,11 +3,11 @@ import axios from "axios";
 import "./Menu.css";
 
 export default function Menu({ onNavigate }) {
-  const [name, setName] = useState("");
-  const [chips, setChips] = useState(null);
+  const [name, setName]         = useState("");
+  const [chips, setChips]       = useState(null);
   const [greeting, setGreeting] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [ready, setReady] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [ready, setReady]       = useState(false);
 
   useEffect(() => {
     setTimeout(() => setReady(true), 100);
@@ -17,7 +17,7 @@ export default function Menu({ onNavigate }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      const res = await axios.post("http://127.0.0.1:5000/api/new-game", {
+      const res = await axios.post("/api/new-game", {
         name: name.trim(),
       });
       setChips(res.data.chips);
@@ -32,10 +32,6 @@ export default function Menu({ onNavigate }) {
     setLoading(false);
   };
 
-  const handlePlay = () => onNavigate("game");
-  const handleTutorial = () => onNavigate("tutorial");
-  const handleStats = () => onNavigate("stats");
-
   const isStarted = chips !== null;
 
   return (
@@ -49,12 +45,14 @@ export default function Menu({ onNavigate }) {
 
       <div className="menu-center">
 
+        {/* Logo */}
         <div className="menu-logo-block">
           <div className="menu-logo-ace">A.C.E.</div>
           <div className="menu-logo-sub">AI Casino Education</div>
           <div className="menu-logo-rule" />
         </div>
 
+        {/* Name entry */}
         {!isStarted ? (
           <div className="menu-entry">
             <label className="menu-label">Enter your name to begin</label>
@@ -86,14 +84,17 @@ export default function Menu({ onNavigate }) {
             </p>
 
             <div className="menu-buttons">
-              <button className="menu-btn menu-btn-play" onClick={handlePlay}>
+              <button className="menu-btn menu-btn-play" onClick={() => onNavigate("game")}>
                 <span className="btn-icon">♠</span> Play
               </button>
-              <button className="menu-btn menu-btn-tutorial" onClick={handleTutorial}>
+              <button className="menu-btn menu-btn-tutorial" onClick={() => onNavigate("tutorial")}>
                 <span className="btn-icon">?</span> Tutorial
               </button>
-              <button className="menu-btn menu-btn-stats" onClick={handleStats}>
+              <button className="menu-btn menu-btn-stats" onClick={() => onNavigate("stats")}>
                 <span className="btn-icon">◈</span> Stats
+              </button>
+              <button className="menu-btn menu-btn-quit" onClick={() => window.close()}>
+                <span className="btn-icon">✕</span> Quit
               </button>
             </div>
           </div>

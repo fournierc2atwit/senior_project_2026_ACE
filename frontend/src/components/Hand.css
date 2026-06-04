@@ -1,0 +1,163 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&display=swap');
+
+.hand-root {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.hand-cards {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Card base ───────────────────────────────────────────────── */
+.card {
+  position: relative;
+  width: 72px;
+  height: 100px;
+  border-radius: 8px;
+  box-shadow:
+    0 4px 12px rgba(0,0,0,0.5),
+    0 1px 3px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.card-black {
+  background: #fafaf8;
+  border: 1px solid rgba(0,0,0,0.15);
+  color: #1a1a1a;
+}
+
+.card-red {
+  background: #fafaf8;
+  border: 1px solid rgba(0,0,0,0.15);
+  color: #c0392b;
+}
+
+/* ── Hidden card ─────────────────────────────────────────────── */
+.card-hidden {
+  background: #1e3a6e;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.card-back-pattern {
+  width: calc(100% - 10px);
+  height: calc(100% - 10px);
+  border-radius: 5px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background:
+    repeating-linear-gradient(
+      45deg,
+      rgba(255,255,255,0.04) 0px,
+      rgba(255,255,255,0.04) 2px,
+      transparent 2px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(255,255,255,0.04) 0px,
+      rgba(255,255,255,0.04) 2px,
+      transparent 2px,
+      transparent 8px
+    );
+}
+
+/* ── Corner labels ───────────────────────────────────────────── */
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  gap: 1px;
+}
+
+.card-corner-tl {
+  top: 5px;
+  left: 6px;
+}
+
+.card-corner-br {
+  bottom: 5px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+.card-rank {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card-suit-sm {
+  font-size: 0.65rem;
+  line-height: 1;
+}
+
+/* ── Center suit ─────────────────────────────────────────────── */
+.card-center-suit {
+  font-size: 1.8rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+/* ── Total ───────────────────────────────────────────────────── */
+.hand-total {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 0.9rem;
+  color: rgba(200,185,138,0.7);
+  letter-spacing: 0.05em;
+}
+
+.hand-total strong {
+  color: #c8b98a;
+}
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes cardDeal {
+  from {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardFlip {
+  0%   { transform: rotateY(90deg) scale(0.9); opacity: 0.5; }
+  100% { transform: rotateY(0deg)  scale(1);   opacity: 1; }
+}
+
+@keyframes bustShake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-8px) rotate(-2deg); }
+  30%      { transform: translateX(8px)  rotate(2deg); }
+  45%      { transform: translateX(-6px) rotate(-1deg); }
+  60%      { transform: translateX(6px)  rotate(1deg); }
+  75%      { transform: translateX(-3px); }
+  90%      { transform: translateX(3px); }
+}
+
+.card-deal {
+  animation: cardDeal 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.card-flip {
+  animation: cardFlip 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.hand-bust {
+  animation: bustShake 0.5s ease-in-out;
+}

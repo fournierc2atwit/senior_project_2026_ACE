@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Crimson+Pro:wght@300;400;600&display=swap');
+
+.hud-root {
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+}
+
+.hud-label {
+  font-family: 'Crimson Pro', serif;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(200,185,138,0.5);
+  line-height: 1;
+}
+
+.hud-value {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hud-chips {
+  font-size: 1.2rem;
+  color: #c9a84c;
+  text-shadow: 0 0 12px rgba(201,168,76,0.3);
+}
+
+.hud-bet {
+  font-size: 1.1rem;
+  color: #e2c97e;
+}
+
+.hud-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(201,168,76,0.2);
+}

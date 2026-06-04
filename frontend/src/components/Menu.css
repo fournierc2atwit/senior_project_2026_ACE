@@ -1,40 +1,23 @@
-/* ── Imports ─────────────────────────────────────────────────── */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
 
-/* ── Variables ───────────────────────────────────────────────── */
 :root {
-  --felt:        #1a4d2e;
-  --felt-mid:    #1f5c37;
-  --felt-light:  #256b40;
-  --gold:        #c9a84c;
-  --gold-light:  #e2c97e;
-  --gold-dark:   #a07c30;
-  --cream:       #f0e6cc;
-  --cream-dim:   #c8b98a;
-  --white:       #ffffff;
-  --shadow:      rgba(0, 0, 0, 0.5);
+  --felt:       #1a4d2e;
+  --felt-mid:   #1f5c37;
+  --felt-light: #256b40;
+  --gold:       #c9a84c;
+  --gold-light: #e2c97e;
+  --gold-dark:  #a07c30;
+  --cream:      #f0e6cc;
+  --cream-dim:  #c8b98a;
 }
 
-/* ── Root ────────────────────────────────────────────────────── */
 .menu-root {
   position: relative;
   min-height: 100vh;
   background-color: var(--felt);
   background-image:
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.04) 2px,
-      rgba(0,0,0,0.04) 4px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.04) 2px,
-      rgba(0,0,0,0.04) 4px
-    );
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,13 +27,11 @@
   transform: translateY(12px);
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
-
 .menu-root.menu-ready {
   opacity: 1;
   transform: translateY(0);
 }
 
-/* ── Felt texture overlay ────────────────────────────────────── */
 .menu-felt {
   position: absolute;
   inset: 0;
@@ -58,12 +39,10 @@
   pointer-events: none;
 }
 
-/* ── Decorative corner suits ─────────────────────────────────── */
 .suit-tl, .suit-tr, .suit-bl, .suit-br {
   position: absolute;
   font-size: 4rem;
-  color: rgba(201, 168, 76, 0.15);
-  font-family: 'Playfair Display', serif;
+  color: rgba(201,168,76,0.15);
   pointer-events: none;
   line-height: 1;
 }
@@ -72,7 +51,6 @@
 .suit-bl { bottom: 1.5rem; left: 2rem; }
 .suit-br { bottom: 1.5rem; right: 2rem; }
 
-/* ── Center content ──────────────────────────────────────────── */
 .menu-center {
   position: relative;
   z-index: 1;
@@ -85,10 +63,8 @@
   padding: 2rem;
 }
 
-/* ── Logo ────────────────────────────────────────────────────── */
-.menu-logo-block {
-  text-align: center;
-}
+/* Logo */
+.menu-logo-block { text-align: center; }
 
 .menu-logo-ace {
   font-family: 'Playfair Display', serif;
@@ -96,12 +72,9 @@
   font-weight: 900;
   color: var(--gold);
   letter-spacing: 0.15em;
-  text-shadow:
-    0 0 40px rgba(201,168,76,0.4),
-    0 2px 8px rgba(0,0,0,0.6);
+  text-shadow: 0 0 40px rgba(201,168,76,0.4), 0 2px 8px rgba(0,0,0,0.6);
   line-height: 1;
 }
-
 .menu-logo-sub {
   font-family: 'Crimson Pro', serif;
   font-size: 1.1rem;
@@ -112,7 +85,6 @@
   text-transform: uppercase;
   margin-top: 0.4rem;
 }
-
 .menu-logo-rule {
   width: 120px;
   height: 1px;
@@ -120,7 +92,7 @@
   margin: 1.2rem auto 0;
 }
 
-/* ── Name entry ──────────────────────────────────────────────── */
+/* Name entry */
 .menu-entry {
   display: flex;
   flex-direction: column;
@@ -128,20 +100,17 @@
   gap: 1rem;
   width: 100%;
 }
-
 .menu-label {
   font-size: 1rem;
   color: var(--cream-dim);
   letter-spacing: 0.08em;
   font-style: italic;
 }
-
 .menu-input-row {
   display: flex;
   gap: 0.75rem;
   width: 100%;
 }
-
 .menu-input {
   flex: 1;
   background: rgba(0,0,0,0.35);
@@ -154,16 +123,11 @@
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.menu-input::placeholder {
-  color: rgba(200, 185, 138, 0.4);
-}
-
+.menu-input::placeholder { color: rgba(200,185,138,0.4); }
 .menu-input:focus {
   border-color: var(--gold);
   box-shadow: 0 0 0 2px rgba(201,168,76,0.2);
 }
-
 .menu-btn-primary {
   background: var(--gold);
   color: #1a1a1a;
@@ -177,18 +141,13 @@
   letter-spacing: 0.05em;
   transition: background 0.2s, transform 0.1s;
 }
-
 .menu-btn-primary:hover:not(:disabled) {
   background: var(--gold-light);
   transform: translateY(-1px);
 }
+.menu-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
-.menu-btn-primary:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-/* ── Actions (after login) ───────────────────────────────────── */
+/* Actions */
 .menu-actions {
   display: flex;
   flex-direction: column;
@@ -196,28 +155,24 @@
   gap: 1.5rem;
   width: 100%;
 }
-
 .menu-greeting {
   font-size: 1.2rem;
   font-style: italic;
   color: var(--cream-dim);
   margin: 0;
 }
-
 .menu-chips {
   display: flex;
   align-items: baseline;
   gap: 0.6rem;
   margin: 0;
 }
-
 .menu-chips-label {
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.2em;
   color: var(--cream-dim);
 }
-
 .menu-chips-value {
   font-family: 'Playfair Display', serif;
   font-size: 2rem;
@@ -226,14 +181,13 @@
   text-shadow: 0 0 20px rgba(201,168,76,0.3);
 }
 
-/* ── Navigation buttons ──────────────────────────────────────── */
+/* Buttons */
 .menu-buttons {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
 }
-
 .menu-btn {
   width: 100%;
   padding: 1rem;
@@ -252,42 +206,41 @@
   gap: 0.75rem;
   transition: background 0.2s, border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
-
 .menu-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
 }
-
 .menu-btn-play {
   background: rgba(201,168,76,0.15);
   border-color: var(--gold);
   color: var(--gold-light);
 }
-
-.menu-btn-play:hover {
-  background: rgba(201,168,76,0.25);
-}
-
+.menu-btn-play:hover { background: rgba(201,168,76,0.25); }
 .menu-btn-tutorial:hover {
   background: rgba(255,255,255,0.06);
   border-color: var(--cream-dim);
 }
-
 .menu-btn-stats:hover {
   background: rgba(255,255,255,0.06);
   border-color: var(--cream-dim);
 }
-
-.btn-icon {
-  font-size: 1rem;
-  opacity: 0.8;
+.menu-btn-quit {
+  border-color: rgba(200,80,80,0.3);
+  color: rgba(240,128,128,0.7);
+}
+.menu-btn-quit:hover {
+  background: rgba(235,87,87,0.15);
+  border-color: rgba(235,87,87,0.5);
+  color: #f08080;
 }
 
-/* ── Tagline ─────────────────────────────────────────────────── */
+.btn-icon { font-size: 1rem; opacity: 0.8; }
+
+/* Tagline */
 .menu-tagline {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.3em;
-  color: rgba(200, 185, 138, 0.3);
+  color: rgba(200,185,138,0.3);
   margin: 0;
 }
