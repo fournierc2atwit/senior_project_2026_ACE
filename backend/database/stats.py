@@ -1,4 +1,4 @@
-from database.db import get_connection
+from backend.database.db import get_connection
 
 def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
     games_played = wins + losses + pushes
