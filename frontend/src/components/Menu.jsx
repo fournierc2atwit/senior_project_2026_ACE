@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "./Menu.css";
 
-export default function Menu({ onNavigate }) {
+export default function Menu({ onNavigate, onSetName }) {
   const [name, setName]         = useState("");
   const [chips, setChips]       = useState(null);
   const [greeting, setGreeting] = useState("");
@@ -17,15 +17,14 @@ export default function Menu({ onNavigate }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      const res = await axios.post("/api/new-game", {
-        name: name.trim(),
-      });
+      const res = await axios.post("/api/new-game", { name: name.trim() });
       setChips(res.data.chips);
       setGreeting(
         res.data.returning
           ? `Welcome back, ${res.data.name}.`
           : `Welcome, ${res.data.name}.`
       );
+      onSetName(name.trim());
     } catch (err) {
       console.error("Failed to start game:", err);
     }
@@ -45,14 +44,12 @@ export default function Menu({ onNavigate }) {
 
       <div className="menu-center">
 
-        {/* Logo */}
         <div className="menu-logo-block">
           <div className="menu-logo-ace">A.C.E.</div>
           <div className="menu-logo-sub">AI Casino Education</div>
           <div className="menu-logo-rule" />
         </div>
 
-        {/* Name entry */}
         {!isStarted ? (
           <div className="menu-entry">
             <label className="menu-label">Enter your name to begin</label>

@@ -4,10 +4,9 @@ import Hand from "./Hand";
 import Hud from "./Hud";
 import "./Table.css";
 
-const API = "/api";
 const CHIP_AMOUNTS = [10, 25, 50, 100];
 
-export default function Table({ onNavigate }) {
+export default function Table({ onNavigate, playerName }) {
   const [phase, setPhase]           = useState("betting");
   const [playerHand, setPlayerHand] = useState(null);
   const [dealerHand, setDealerHand] = useState(null);
@@ -35,7 +34,7 @@ export default function Table({ onNavigate }) {
     setLoading(true);
     clearError();
     try {
-      const res = await axios.post(`${API}/deal`, { bet });
+      const res = await axios.post("/api/deal", { bet });
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
@@ -47,7 +46,7 @@ export default function Table({ onNavigate }) {
 
   const fetchHint = async () => {
     try {
-      const res = await axios.get(`${API}/hint`);
+      const res = await axios.get("/api/hint");
       setHint(res.data);
     } catch { setHint(null); }
   };
@@ -55,7 +54,7 @@ export default function Table({ onNavigate }) {
   const handleHit = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/hit`);
+      const res = await axios.post("/api/hit");
       setPlayerHand(res.data.player_hand);
       setChips(res.data.chips);
       if (res.data.bust) {
@@ -71,7 +70,7 @@ export default function Table({ onNavigate }) {
   const handleStand = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/stand`);
+      const res = await axios.post("/api/stand");
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
       setOutcome(res.data.outcome);
@@ -85,7 +84,7 @@ export default function Table({ onNavigate }) {
   const handleDouble = async () => {
     setLoading(true);
     try {
-      const res = await axios.post(`${API}/double`);
+      const res = await axios.post("/api/double");
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
@@ -108,12 +107,29 @@ export default function Table({ onNavigate }) {
     clearError();
   };
 
+  const handleReset = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.post("/api/new-game", { name: playerName });
+      setChips(res.data.chips);
+      setBet(0);
+      setOutcome(null);
+      setMessage("");
+      setPlayerHand(null);
+      setDealerHand(null);
+      setPhase("betting");
+    } catch { setError("Failed to reset. Try again."); }
+    setLoading(false);
+  };
+
   const outcomeColor = () => {
     if (!outcome) return "";
     if (outcome === "lose") return "result-lose";
     if (outcome === "push") return "result-push";
     return "result-win";
   };
+
+  const isBroke = (chips ?? 1000) === 0;
 
   return (
     <div className="table-root">
@@ -157,27 +173,37 @@ export default function Table({ onNavigate }) {
       {error && <div className="error-banner">{error}</div>}
 
       <div className="table-controls">
+
         {phase === "betting" && (
-          <div className="controls-betting">
-            <div className="chip-row">
-              {CHIP_AMOUNTS.map((amt) => (
-                <button key={amt} className="chip-btn" onClick={() => addChips(amt)}>
-                  +${amt}
-                </button>
-              ))}
-            </div>
-            <div className="bet-action-row">
-              <button className="btn-clear" onClick={clearBet} disabled={bet === 0}>Clear</button>
-              <div className="bet-display">Bet: <strong>${bet}</strong></div>
-              <button
-                className={`btn-deal ${bet > 0 ? "btn-deal-active" : ""}`}
-                onClick={handleDeal}
-                disabled={bet === 0 || loading}
-              >
-                {loading ? "Dealing..." : "Deal"}
+          isBroke ? (
+            <div className="controls-result">
+              <div className="result-message result-lose">Out of chips!</div>
+              <button className="btn-next" onClick={handleReset}>
+                Start Over
               </button>
             </div>
-          </div>
+          ) : (
+            <div className="controls-betting">
+              <div className="chip-row">
+                {CHIP_AMOUNTS.map((amt) => (
+                  <button key={amt} className="chip-btn" onClick={() => addChips(amt)}>
+                    +${amt}
+                  </button>
+                ))}
+              </div>
+              <div className="bet-action-row">
+                <button className="btn-clear" onClick={clearBet} disabled={bet === 0}>Clear</button>
+                <div className="bet-display">Bet: <strong>${bet}</strong></div>
+                <button
+                  className={`btn-deal ${bet > 0 ? "btn-deal-active" : ""}`}
+                  onClick={handleDeal}
+                  disabled={bet === 0 || loading}
+                >
+                  {loading ? "Dealing..." : "Deal"}
+                </button>
+              </div>
+            </div>
+          )
         )}
 
         {phase === "playing" && (
@@ -194,6 +220,7 @@ export default function Table({ onNavigate }) {
             <button className="btn-next" onClick={handleNextRound}>Next Round</button>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -372,18 +372,18 @@ def _persist_stats():
     bankrupts = session.get("bankrupts", 0)
 
     if chips <= 0:
-        bankrupts += 1
-        chips = Player.STARTING_CHIPS
-        session["chips"] = chips
-        session["bankrupts"] = bankrupts
+       bankrupts += 1
+       chips = Player.STARTING_CHIPS
+       session["chips"] = chips
+       session["bankrupts"] = bankrupts
 
     save_stats(
-        session.get("name", "Player"),
-        chips,
-        session.get("wins", 0),
-        session.get("losses", 0),
-        session.get("pushes", 0),
-        bankrupts,
+       session.get("name", "Player"),
+       chips,
+       session.get("wins", 0),
+       session.get("losses", 0),
+       session.get("pushes", 0),
+       bankrupts,
     )
 
 def _outcome_message(result):
