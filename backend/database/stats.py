@@ -2,14 +2,23 @@ from database.db import get_connection
 
 def save_stats(player_name, chips, wins, losses, pushes, bankrupts):
     games_played = wins + losses + pushes
+
     conn = get_connection()
     cur = conn.cursor()
     cur.execute("""
-        INSERT INTO player_stats 
+        INSERT INTO player_stats
         (player_name, chips, wins, losses, pushes, games_played, bankrupts)
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (player_name)
+        DO UPDATE SET
+            chips = EXCLUDED.chips,
+            wins = EXCLUDED.wins,
+            losses = EXCLUDED.losses,
+            pushes = EXCLUDED.pushes,
+            games_played = EXCLUDED.games_played,
+            bankrupts = EXCLUDED.bankrupts;
     """, (player_name, chips, wins, losses, pushes, games_played, bankrupts))
-
+    
     conn.commit()
     cur.close()
     conn.close()

@@ -17,7 +17,7 @@ def create_tables():
     cur.execute("""
         CREATE TABLE IF NOT EXISTS player_stats (
             id SERIAL PRIMARY KEY,
-            player_name TEXT NOT NULL,
+            player_name TEXT NOT NULL UNIQUE,
             chips INTEGER NOT NULL,
             wins INTEGER NOT NULL,
             losses INTEGER NOT NULL,
