@@ -1,4 +1,4 @@
-from backend.game.hand import Hand
+from game.hand import Hand
 class Player:
     # Represents a player in the game
     # Goals:

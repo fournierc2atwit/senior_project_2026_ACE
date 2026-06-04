@@ -1,4 +1,4 @@
-from backend.game.card import Card
+from game.card import Card
 class Hand:
 
     # Goals:

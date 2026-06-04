@@ -1,151 +1,403 @@
-from backend.game.deck import Deck
-from backend.game.player import Player
-from backend.game.hand import Hand
-from backend.game.rules import Rules
-from backend.database.db import create_tables
-from backend.database.stats import save_stats, get_player_stats
+import os
+import sys
 
-# Display the current hands for both the player and dealer
-def show_hands(player, dealer, hide_dealer=True):
-    print()
-    if hide_dealer:
-        print("Dealer:", dealer.hand.short_names(hide_second=True))
-    else:
-        print("Dealer:", dealer.hand)
+from flask import Flask, session, request, jsonify
+from flask_cors import CORS
 
-    print("Player:", player.hand)
-    print()
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-# Run one full round of blackjack
-def play_round(player, deck):
-    # Create dealer player object
-    dealer = Player("Dealer")
+try:
+    from game.card import Card
+    from game.deck import Deck
+    from game.hand import Hand
+    from game.player import Player
+    from game.rules import Rules
+    from database.db import create_tables
+    from database.stats import save_stats, get_player_stats
+except ImportError:
+    from backend.game.card import Card
+    from backend.game.deck import Deck
+    from backend.game.hand import Hand
+    from backend.game.player import Player
+    from backend.game.rules import Rules
+    from backend.database.db import create_tables
+    from backend.database.stats import save_stats, get_player_stats
 
-    # Reset hands before starting a new round
-    player.new_hand()
-    dealer.new_hand()
+app = Flask(__name__)
+app.secret_key = "ace-dev-secret-key"
+CORS(app)
 
-    # player chooses bet amount for the round
-    while True:
-        try:
-            bet = int(input("Enter your bet amount: "))
-            if player.place_bet(bet):
-                break
-        except ValueError:
-            print("Please enter a valid number.")
+# Create database tables on startup if they don't exist
+#create_tables()
 
-    # Initial deal
-    player.hand.add_card(deck.deal())
-    dealer.hand.add_card(deck.deal())
-    player.hand.add_card(deck.deal())
-    dealer.hand.add_card(deck.deal())
+# ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
 
-    show_hands(player, dealer, hide_dealer=True)
+def serialize_hand(hand, hide_second=False):
+    """Convert a Hand object to a JSON-serializable dict."""
+    return {
+        "cards":     hand.short_names(hide_second=hide_second),
+        "total":     hand.get_value() if not hide_second else "?",
+        "bust":      hand.is_bust(),
+        "blackjack": hand.is_blackjack(),
+    }
 
-    # Player turn loop
-    while not player.hand.is_bust():
-        choice = input("Hit or stand? ").lower().strip()
+def load_hand(card_list):
+    """Rebuild a Hand object from session-stored card dicts."""
+    hand = Hand()
+    for c in card_list:
+        hand.add_card(Card(c["suit"], c["rank"]))
+    return hand
 
-        if choice == "hit":
-            # Add another card to player's hand
-            player.hand.add_card(deck.deal())
-            show_hands(player, dealer, hide_dealer=True)
-        elif choice == "stand":
-            break
-        else:
-            print("Type hit or stand.")
-
-    if player.hand.is_bust():
-        print("You busted. You lose.")
-        player.lose()
-        return
-
-    # Dealer turn starts after player stands
-    print("Dealer reveals hand:")
-    show_hands(player, dealer, hide_dealer=False)
-
-    # Dealer must hit until reaching at least 17
-    while Rules.dealer_should_hit(dealer.hand):
-        print("Dealer hits.")
-        dealer.hand.add_card(deck.deal())
-        show_hands(player, dealer, hide_dealer=False)
-    # Determine winner after both turns finish
-    result = Rules.determine_winner(player.hand, dealer.hand)
-
-    if result == "win":
-        print("You win!")
-        player.win()
-    elif result == "blackjack":
-        print("Blackjack! You win!")
-        player.win(blackjack=True)
-    elif result == "push":
-        print("Push. You tied.")
-        player.push()
-    else:
-        print("You lose.")
-        player.lose()
-        print(f"Current chips: {player.chips}")
-
-# Main game loop
-def main():
-    # Creates database table if needed
-    create_tables()
+def load_deck(card_list):
+    """Rebuild a Deck from session-stored card dicts."""
     deck = Deck()
-    print("Welcome to A.C.E. Blackjack!")
+    deck.cards = [Card(c["suit"], c["rank"]) for c in card_list]
+    deck.dealt = []
+    return deck
 
-    name = input("Enter your name: ")
+def save_deck(deck):
+    return [{"suit": c.suit, "rank": c.rank} for c in deck.cards]
 
-    saved_stats = get_player_stats(name)
+def save_hand(hand):
+    return [{"suit": c.suit, "rank": c.rank} for c in hand.cards]
 
-    if saved_stats:
-        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved_stats
+def apply_outcome(result):
+    """
+    Updates win/loss/push counters and chips in the session
+    based on the round result string.
+    Returns the updated chip count.
+    """
+    chips  = session.get("chips", 0)
+    bet    = session.get("bet", 0)
+    wins   = session.get("wins", 0)
+    losses = session.get("losses", 0)
+    pushes = session.get("pushes", 0)
 
-        player = Player(player_name, chips)
-        player.wins = wins
-        player.losses = losses
-        player.pushes = pushes
-        player.bankrupts = bankrupts
-
-        print(f"Welcome back, {player.name}!")
-        print(f"Loaded chips: {player.chips}")
+    if result == "blackjack":
+        chips += bet + int(bet * 1.5)
+        wins  += 1
+    elif result == "win":
+        chips += bet * 2
+        wins  += 1
+    elif result == "push":
+        chips += bet
+        pushes += 1
     else:
-        player = Player(name)
-        print(f"New player created: {player.name}")
+        losses += 1  # bet already deducted at deal time
 
-    # Reset player chips if they were bankrupt last session
-    if player.chips <= 0:
-        print("You were bankrupt. Resetting chips to 1000.")
-        player.chips = Player.STARTING_CHIPS    
-        
-    # Continue playing while player still has chips
-    while player.chips > 0:
-        print(f"\nChips: {player.chips}")
-        play_round(player, deck)
-        again = input("Play again? yes/no: ").lower().strip()
-        if again == "cash out":
-            print(f"You cashed out with {player.chips} chips.")
-            break
-        elif again != "yes":
-            break
+    session["chips"]  = chips
+    session["wins"]   = wins
+    session["losses"] = losses
+    session["pushes"] = pushes
 
-    print("Game over.")
-    print(f"Final chips: {player.chips}")
+    return chips
 
-    # Track bankrupt games
-    if player.chips <= 0:
-        player.bankrupts += 1
-        print("You went bankrupt.")
+def clear_round():
+    """Remove active round data from session after a round ends."""
+    for key in ["player_hand", "dealer_hand", "deck", "bet"]:
+        session.pop(key, None)
 
-    # Save player stats to database
-    save_stats(
-        player.name,
-        player.chips,
-        player.wins,
-        player.losses,
-        player.pushes,
-        player.bankrupts
-    )
-    print("Stats saved to database.")
+# ------------------------------------------------------------------
+# Routes
+# ------------------------------------------------------------------
+
+@app.route("/api/new-game", methods=["POST"])
+def new_game():
+    """
+    Initialize a new session for a player.
+    Accepts an optional player name to load saved stats from the database.
+    Body: { "name": "Colby" }  (optional)
+    """
+    data = request.get_json() or {}
+    name = data.get("name", "Player")
+
+    # saved = get_player_stats(name)
+    saved = None
+
+    if saved:
+        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
+        # Reset chips if the player was bankrupt last session
+        if chips <= 0:
+            chips = Player.STARTING_CHIPS
+    else:
+        chips     = Player.STARTING_CHIPS
+        wins      = 0
+        losses    = 0
+        pushes    = 0
+        bankrupts = 0
+
+    session.clear()
+    session["name"]      = name
+    session["chips"]     = chips
+    session["wins"]      = wins
+    session["losses"]    = losses
+    session["pushes"]    = pushes
+    session["bankrupts"] = bankrupts
+
+    return jsonify({
+        "status":   "success",
+        "name":     name,
+        "chips":    chips,
+        "returning": saved is not None,
+    })
+
+
+@app.route("/api/deal", methods=["POST"])
+def deal():
+    """
+    Place a bet and deal the opening hand.
+    Body: { "bet": 100 }
+    """
+    data  = request.get_json() or {}
+    bet   = data.get("bet", 0)
+    chips = session.get("chips", Player.STARTING_CHIPS)
+
+    if bet <= 0 or bet > chips:
+        return jsonify({ "status": "error", "message": "Invalid bet amount." }), 400
+
+    deck        = Deck()
+    player_hand = Hand()
+    dealer_hand = Hand()
+
+    player_hand.add_card(deck.deal())
+    dealer_hand.add_card(deck.deal())
+    player_hand.add_card(deck.deal())
+    dealer_hand.add_card(deck.deal())
+
+    session["deck"]        = save_deck(deck)
+    session["player_hand"] = save_hand(player_hand)
+    session["dealer_hand"] = save_hand(dealer_hand)
+    session["bet"]         = bet
+    session["chips"]       = chips - bet
+
+    return jsonify({
+        "status":      "success",
+        "player_hand": serialize_hand(player_hand),
+        "dealer_hand": serialize_hand(dealer_hand, hide_second=True),
+        "chips":       session["chips"],
+        "bet":         bet,
+    })
+
+
+@app.route("/api/hit", methods=["POST"])
+def hit():
+    """Deal one card to the player and check for bust."""
+    if "player_hand" not in session:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    deck        = load_deck(session["deck"])
+    player_hand = load_hand(session["player_hand"])
+
+    player_hand.add_card(deck.deal())
+
+    session["deck"]        = save_deck(deck)
+    session["player_hand"] = save_hand(player_hand)
+
+    bust = player_hand.is_bust()
+
+    # If bust, auto-resolve the round
+    if bust:
+        chips = apply_outcome("lose")
+       # _persist_stats()
+        clear_round()
+
+    return jsonify({
+        "status":      "success",
+        "player_hand": serialize_hand(player_hand),
+        "bust":        bust,
+        "chips":       session.get("chips"),
+    })
+
+
+@app.route("/api/stand", methods=["POST"])
+def stand():
+    """End the player's turn, run the dealer, and resolve the round."""
+    if "player_hand" not in session:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    deck        = load_deck(session["deck"])
+    player_hand = load_hand(session["player_hand"])
+    dealer_hand = load_hand(session["dealer_hand"])
+
+    Rules.run_dealer(dealer_hand, deck)
+
+    result = Rules.determine_winner(player_hand, dealer_hand)
+    chips  = apply_outcome(result)
+    #_persist_stats()
+    clear_round()
+
+    return jsonify({
+        "status":      "success",
+        "dealer_hand": serialize_hand(dealer_hand),
+        "outcome":     result,
+        "message":     _outcome_message(result),
+        "chips":       chips,
+    })
+
+
+@app.route("/api/double", methods=["POST"])
+def double():
+    """Double the bet, deal one card, run the dealer, and resolve."""
+    if "player_hand" not in session:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    chips = session.get("chips", 0)
+    bet   = session.get("bet", 0)
+
+    if bet > chips:
+        return jsonify({ "status": "error", "message": "Not enough chips to double down." }), 400
+
+    deck        = load_deck(session["deck"])
+    player_hand = load_hand(session["player_hand"])
+    dealer_hand = load_hand(session["dealer_hand"])
+
+    # Deduct the extra bet and double it
+    session["chips"] = chips - bet
+    session["bet"]   = bet * 2
+
+    player_hand.add_card(deck.deal())
+
+    Rules.run_dealer(dealer_hand, deck)
+
+    result = Rules.determine_winner(player_hand, dealer_hand)
+    chips  = apply_outcome(result)
+    #_persist_stats()
+    clear_round()
+
+    return jsonify({
+        "status":      "success",
+        "player_hand": serialize_hand(player_hand),
+        "dealer_hand": serialize_hand(dealer_hand),
+        "outcome":     result,
+        "message":     _outcome_message(result),
+        "chips":       chips,
+    })
+
+
+@app.route("/api/hint", methods=["GET"])
+def hint():
+    """
+    Return the basic strategy recommendation for the current hand.
+    Placeholder — Reymond will replace this with the full strategy engine.
+    """
+    if "player_hand" not in session or "dealer_hand" not in session:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    player_hand = load_hand(session["player_hand"])
+    dealer_hand = load_hand(session["dealer_hand"])
+
+    player_total  = player_hand.get_value()
+    dealer_upcard = dealer_hand.cards[0].get_value()
+    is_soft       = player_hand.is_soft()
+
+    # Placeholder logic — replace with strategy.py lookup
+    if player_total >= 17:
+        action      = "Stand"
+        explanation = "You have a strong hand. Standing is the safest play."
+    elif player_total <= 11:
+        action      = "Hit"
+        explanation = "You cannot bust with one card. Always hit on 11 or below."
+    elif is_soft:
+        action      = "Hit"
+        explanation = "Soft hands are flexible. Hitting gives you a chance to improve."
+    else:
+        action      = "Hit" if player_total < 17 else "Stand"
+        explanation = "Basic strategy recommends hitting on hard totals below 17."
+
+    return jsonify({
+        "status":      "success",
+        "action":      action,
+        "explanation": explanation,
+        "player_total": player_total,
+        "dealer_upcard": dealer_upcard,
+    })
+
+
+@app.route("/api/stats", methods=["GET"])
+def stats():
+    """Return the current player's session and all-time stats from the database."""
+    name = session.get("name", "Player")
+
+    # Session stats
+    session_stats = {
+        "chips":  session.get("chips", Player.STARTING_CHIPS),
+        "wins":   session.get("wins", 0),
+        "losses": session.get("losses", 0),
+        "pushes": session.get("pushes", 0),
+    }
+
+    # All-time stats from database
+    # saved = get_player_stats(name)
+    saved = None
+    if saved:
+        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
+        alltime_stats = {
+            "games_played": games_played,
+            "wins":         wins,
+            "losses":       losses,
+            "pushes":       pushes,
+            "bankrupts":    bankrupts,
+            "chips":        chips,
+        }
+    else:
+        alltime_stats = None
+
+    return jsonify({
+        "status":       "success",
+        "name":         name,
+        "session":      session_stats,
+        "all_time":     alltime_stats,
+    })
+
+
+@app.route("/api/save", methods=["POST"])
+def save():
+    """
+    Manually save the current session stats to the database.
+    Called when the player exits or cashes out.
+    """
+    #_persist_stats()
+    return jsonify({ "status": "success", "message": "Stats saved." })
+
+
+# ------------------------------------------------------------------
+# Internal helpers
+# ------------------------------------------------------------------
+
+def _persist_stats():
+    pass
+    """Write current session stats to the database."""
+    #chips     = session.get("chips", Player.STARTING_CHIPS)
+    #bankrupts = session.get("bankrupts", 0)
+
+    #if chips <= 0:
+     #   bankrupts += 1
+     #   session["bankrupts"] = bankrupts
+
+    #save_stats(
+     #   session.get("name", "Player"),
+      #  chips,
+       # session.get("wins", 0),
+      #  session.get("losses", 0),
+      #  session.get("pushes", 0),
+      #  bankrupts,
+    # )
+
+def _outcome_message(result):
+    messages = {
+        "blackjack": "Blackjack! You win 3:2!",
+        "win":       "You win!",
+        "push":      "Push — bet returned.",
+        "lose":      "You lose.",
+    }
+    return messages.get(result, "Round over.")
+
+
+# ------------------------------------------------------------------
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
