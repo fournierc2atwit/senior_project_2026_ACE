@@ -130,6 +130,16 @@ export default function Table({ onNavigate, playerName, initialChips }) {
 
   const isBroke = chips === 0;
 
+  const handleMenu = async () => {
+    try {
+      await axios.post("/api/save");
+    } catch (err) {
+      console.error("Failed to save before menu", err);
+    }
+
+    onNavigate("menu");
+  };
+  
   return (
     <div className="table-root">
       <div className="table-felt" />
@@ -138,7 +148,7 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={() => onNavigate("menu")}>
+      <button className="table-menu-btn" onClick={handleMenu}>
         ← Menu
       </button>
 
