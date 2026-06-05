@@ -6,11 +6,11 @@ import "./Table.css";
 
 const CHIP_AMOUNTS = [10, 25, 50, 100];
 
-export default function Table({ onNavigate, playerName }) {
+export default function Table({ onNavigate, playerName, initialChips }) {
   const [phase, setPhase]           = useState("betting");
   const [playerHand, setPlayerHand] = useState(null);
   const [dealerHand, setDealerHand] = useState(null);
-  const [chips, setChips]           = useState(null);
+  const [chips, setChips]           = useState(initialChips ?? 1000);
   const [bet, setBet]               = useState(0);
   const [outcome, setOutcome]       = useState(null);
   const [message, setMessage]       = useState("");
@@ -21,8 +21,7 @@ export default function Table({ onNavigate, playerName }) {
   const clearError = () => setError("");
 
   const addChips = (amount) => {
-    const available = chips ?? 1000;
-    if (bet + amount > available) return;
+    if (bet + amount > chips) return;
     setBet((b) => b + amount);
     clearError();
   };
@@ -129,7 +128,7 @@ export default function Table({ onNavigate, playerName }) {
     return "result-win";
   };
 
-  const isBroke = (chips ?? 1000) === 0;
+  const isBroke = chips === 0;
 
   return (
     <div className="table-root">

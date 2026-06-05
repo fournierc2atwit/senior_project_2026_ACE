@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "./Menu.css";
 
-export default function Menu({ onNavigate, onSetName }) {
+export default function Menu({ onNavigate, onSetName, onSetChips }) {
   const [name, setName]         = useState("");
   const [chips, setChips]       = useState(null);
   const [greeting, setGreeting] = useState("");
@@ -25,6 +25,7 @@ export default function Menu({ onNavigate, onSetName }) {
           : `Welcome, ${res.data.name}.`
       );
       onSetName(name.trim());
+      onSetChips(res.data.chips);
     } catch (err) {
       console.error("Failed to start game:", err);
     }
