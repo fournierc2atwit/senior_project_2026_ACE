@@ -15,7 +15,7 @@ try:
     from game.player import Player
     from game.rules import Rules
     from database.db import create_tables
-    from database.stats import save_stats, get_player_stats
+    from database.stats import save_stats, get_player_stats, get_all_player_stats
 except ImportError:
     from backend.game.card import Card
     from backend.game.deck import Deck
@@ -23,7 +23,7 @@ except ImportError:
     from backend.game.player import Player
     from backend.game.rules import Rules
     from backend.database.db import create_tables
-    from backend.database.stats import save_stats, get_player_stats
+    from backend.database.stats import save_stats, get_player_stats, get_all_player_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -330,10 +330,21 @@ def stats():
         "pushes": session.get("pushes", 0),
     }
 
+
     # All-time stats from database
     saved = get_player_stats(name)
     if saved:
         player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
+
+        if games_played > 0:
+            win_percentage = round((wins / games_played) * 100, 2)
+            loss_percentage = round((losses / games_played) * 100, 2)
+            push_percentage = round((pushes / games_played) * 100, 2)
+        else:
+            win_percentage = 0
+            loss_percentage = 0
+            push_percentage = 0
+
         alltime_stats = {
             "games_played": games_played,
             "wins":         wins,
@@ -341,6 +352,9 @@ def stats():
             "pushes":       pushes,
             "bankrupts":    bankrupts,
             "chips":        chips,
+            "win_percentage": win_percentage,
+            "loss_percentage": loss_percentage,
+            "push_percentage": push_percentage,
         }
     else:
         alltime_stats = None
@@ -361,6 +375,33 @@ def save():
     """
     _persist_stats()
     return jsonify({ "status": "success", "message": "Stats saved." })
+
+@app.route("/api/leaderboard", methods=["GET"])
+def leaderboard():
+    players = get_all_player_stats()
+
+    leaderboard = []
+
+    for player in players:
+        player_name, chips, wins, losses, pushes, games_played, bankrupts = player
+
+        if games_played > 0:
+            win_percentage = round((wins / games_played) * 100, 2)
+        else:
+            win_percentage = 0
+
+        leaderboard.append({
+            "player_name": player_name,
+            "chips": chips,
+            "wins": wins,
+            "losses": losses,
+            "pushes": pushes,
+            "games_played": games_played,
+            "bankrupts": bankrupts,
+            "win_percentage": win_percentage
+        })
+
+    return jsonify({"leaderboard": leaderboard})
 
 
 # ------------------------------------------------------------------
