@@ -1,0 +1,151 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+/* Root reuses table styles */
+.tut-root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a4d2e;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+  font-family: 'Crimson Pro', Georgia, serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Progress dots */
+.tut-progress {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.4rem;
+  z-index: 10;
+}
+
+.tut-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.2);
+  border: 1px solid rgba(201,168,76,0.3);
+  transition: background 0.3s;
+}
+
+.tut-dot-done   { background: rgba(201,168,76,0.5); }
+.tut-dot-active { background: #c9a84c; box-shadow: 0 0 6px rgba(201,168,76,0.6); }
+
+/* Highlight glow on active element */
+.tut-highlight {
+  outline: 2px solid rgba(201,168,76,0.8);
+  outline-offset: 6px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(201,168,76,0.25);
+  transition: outline 0.3s, box-shadow 0.3s;
+}
+
+/* Result display */
+.tut-result {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+}
+
+/* Tutorial overlay panel */
+.tut-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  background: rgba(10, 25, 15, 0.92);
+  border-top: 1px solid rgba(201,168,76,0.3);
+  padding: 1.25rem 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 160px;
+  backdrop-filter: blur(4px);
+}
+
+.tut-step-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: rgba(201,168,76,0.5);
+}
+
+.tut-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: #c9a84c;
+  margin: 0;
+}
+
+.tut-body {
+  font-size: 1rem;
+  color: #c8b98a;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 780px;
+}
+
+.tut-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.tut-btn-next {
+  background: #c9a84c;
+  border: none;
+  border-radius: 4px;
+  color: #1a1a1a;
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.6rem 1.75rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.tut-btn-next:hover:not(:disabled) {
+  background: #e2c97e;
+  transform: translateY(-1px);
+}
+
+.tut-btn-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tut-action-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.tut-action-btn {
+  background: rgba(201,168,76,0.15);
+  border: 1px solid rgba(201,168,76,0.4);
+  border-radius: 4px;
+  color: #e2c97e;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.55rem 1.25rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.tut-action-btn:hover:not(:disabled) {
+  background: rgba(201,168,76,0.3);
+  transform: translateY(-1px);
+}
+
+.tut-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

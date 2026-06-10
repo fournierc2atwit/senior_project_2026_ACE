@@ -186,7 +186,7 @@ export default function Table({ onNavigate, playerName, initialChips }) {
         {phase === "betting" && (
           isBroke ? (
             <div className="controls-result">
-              <div className="result-message result-lose">Out of chips!</div>
+              <div className="result-message result-lose">You went bankrupt!</div>
               <button className="btn-next" onClick={handleReset}>
                 Start Over
               </button>
