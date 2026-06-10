@@ -61,3 +61,21 @@ def get_player_stats(player_name):
     conn.close()
 
     return stats
+
+def get_all_player_stats():
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT player_name, chips, wins, losses, pushes,
+               games_played, bankrupts
+        FROM player_stats
+        ORDER BY chips DESC;
+    """)
+
+    players = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return players   
