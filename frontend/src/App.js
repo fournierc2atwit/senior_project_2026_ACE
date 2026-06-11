@@ -15,7 +15,7 @@ export default function App() {
     <div>
       {screen === "menu"     && <Menu     onNavigate={navigate} onSetName={setPlayerName} onSetChips={setPlayerChips} />}
       {screen === "game"     && <Table    onNavigate={navigate} playerName={playerName} initialChips={playerChips} />}
-      {screen === "stats"    && <Stats    onNavigate={navigate} />}
+      {screen === "stats"    && <Stats    onNavigate={navigate} playerName={playerName} />}
       {screen === "tutorial" && <Tutorial onNavigate={navigate} />}
     </div>
   );
