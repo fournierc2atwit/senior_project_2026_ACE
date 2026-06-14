@@ -2,7 +2,6 @@
 # The order here defines the COLUMN order of every table below.
 DEALER_VALUES = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
  
-# Human-readable names for each final action code.
 ACTION_NAMES = {'H': 'Hit', 'S': 'Stand', 'D': 'Double Down', 'P': 'Split'}
  
 # ---------------------------------------------------------------------------
@@ -76,9 +75,6 @@ PAIR_STRATEGY = {
 }
  
  
-# ---------------------------------------------------------------------------
-# The decision engine
-# ---------------------------------------------------------------------------
 def _col(dealer_value):
     if dealer_value not in DEALER_VALUES:
         raise ValueError(f"dealer_value must be 2-11 (11 = Ace), got {dealer_value}")
@@ -88,15 +84,12 @@ def _col(dealer_value):
 def get_raw_code(total, dealer_value, is_soft=False, is_pair=False, pair_value=None):
     col = _col(dealer_value)
  
-    # Pairs take priority: the pair chart already encodes "don't split" cases.
     if is_pair and pair_value is not None:
         return PAIR_STRATEGY[pair_value][col]
  
-    # Soft totals (an Ace is counting as 11).
     if is_soft and total in SOFT_STRATEGY:
         return SOFT_STRATEGY[total][col]
  
-    # Hard totals. Anything below 5 or above 21 is clamped into the table range.
     clamped = max(5, min(total, 21))
     return HARD_STRATEGY[clamped][col]
  
@@ -106,8 +99,6 @@ def resolve_code(code, dealer_value, total, is_soft=False,
     if code == 'P':
         if can_split:
             return 'P'
-        # Can't split (e.g. the game hasn't implemented it, or it's a 3+ card
-        # hand): play the pair as a normal total instead.
         fallback = get_raw_code(total, dealer_value, is_soft=is_soft, is_pair=False)
         return resolve_code(fallback, dealer_value, total, is_soft=is_soft,
                             can_double=can_double, can_split=False)
@@ -115,8 +106,7 @@ def resolve_code(code, dealer_value, total, is_soft=False,
         return 'D' if can_double else 'H'
     if code == 'Ds':
         return 'D' if can_double else 'S'
-    return code  # 'H' or 'S'
- 
+    return code
  
 def get_action(total, dealer_value, is_soft=False, is_pair=False, pair_value=None,
                can_double=True, can_split=True):
@@ -126,9 +116,6 @@ def get_action(total, dealer_value, is_soft=False, is_pair=False, pair_value=Non
                         can_double=can_double, can_split=can_split)
  
  
-# ---------------------------------------------------------------------------
-# Chart rendering (handy for the team's "cross-reference vs public chart" eval)
-# ---------------------------------------------------------------------------
 def render_chart(title, table, key_fmt):
     head = "  " + "".join(f"{('A' if d == 11 else d):>4}" for d in DEALER_VALUES)
     lines = [title, " " * 6 + head]
@@ -147,7 +134,6 @@ if __name__ == "__main__":
     print(render_chart("PAIRS", PAIR_STRATEGY,
                        lambda k: ("A,A" if k == 11 else f"{k},{k}")))
  
-    # A few internal sanity checks against well-known answers.
     assert get_action(16, 10) == 'H'
     assert get_action(16, 6) == 'S'
     assert get_action(11, 6) == 'D'
