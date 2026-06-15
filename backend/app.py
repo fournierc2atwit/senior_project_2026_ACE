@@ -277,43 +277,38 @@ def double():
         "chips":       chips,
     })
 
+from ai.advise import Advisor
+
+_advisor = Advisor()
 
 @app.route("/api/hint", methods=["GET"])
 def hint():
-    """
-    Return the basic strategy recommendation for the current hand.
-    Placeholder — Reymond will replace this with the full strategy engine.
-    """
+    """Return the basic strategy recommendation for the current hand."""
     if "player_hand" not in session or "dealer_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
     player_hand = load_hand(session["player_hand"])
     dealer_hand = load_hand(session["dealer_hand"])
 
-    player_total  = player_hand.get_value()
-    dealer_upcard = dealer_hand.cards[0].get_value()
-    is_soft       = player_hand.is_soft()
+    # Dealer upcard is always the first card
+    dealer_upcard = dealer_hand.cards[0]
 
-    # Placeholder logic — replace with strategy.py lookup
-    if player_total >= 17:
-        action      = "Stand"
-        explanation = "You have a strong hand. Standing is the safest play."
-    elif player_total <= 11:
-        action      = "Hit"
-        explanation = "You cannot bust with one card. Always hit on 11 or below."
-    elif is_soft:
-        action      = "Hit"
-        explanation = "Soft hands are flexible. Hitting gives you a chance to improve."
-    else:
-        action      = "Hit" if player_total < 17 else "Stand"
-        explanation = "Basic strategy recommends hitting on hard totals below 17."
+    # Can only double/split on the opening two cards
+    can_double = player_hand.card_count() == 2
+    can_split  = player_hand.is_pair()
+
+    rec = _advisor.recommend(
+        player_hand,
+        dealer_upcard,
+        can_double=can_double,
+        can_split=can_split,
+    )
 
     return jsonify({
         "status":      "success",
-        "action":      action,
-        "explanation": explanation,
-        "player_total": player_total,
-        "dealer_upcard": dealer_upcard,
+        "action":      rec["action_name"],
+        "explanation": rec["reason"],
+        "raw_action":  rec["action"],
     })
 
 
