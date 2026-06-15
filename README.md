@@ -1,155 +1,187 @@
-# senior_project_2026_ACE
-
 # A.C.E. — AI Casino Education
 
-A.C.E is an AI-assisted Blackjack training game that helps users learn Blackjack strategy,  probability, and decision-making in a low-risk interactive environment. Players will engage in fully playable games of Blackjack while receiving real-time AI-driven strategies that change depending on the user’s current hand and the dealer’s cards. The core educational feature is the AI-driven strategy engine, which suggests the most statistically optimal move for every possible hand combination. After each move, if a less than optimal one is made by the user, the AI will explain why the move was not optimal, which promotes learning through feedback. Player statistics, such as a win/loss record, and session history will be stored in a local database, which can then be accessed by users to track their progress.
+A.C.E. is an AI-assisted Blackjack training project designed to help players learn strategy, understand odds, and improve decision-making in a low-risk, interactive environment. The project currently combines a Flask backend for gameplay and stats, a React frontend for the user interface, and supporting assets for the card-based experience.
 
-# Team Members
+## Overview
 
-- Colby Fournier - Game Logic Developer and UI Designer
-- Cisco Harbeck - Game Logic Developer and Backend/Database Lead
-- Reymond Sanchez - Game Logic Developer and AI Systems Lead
+This repository contains the full application stack for the A.C.E. project:
+- Python/Flask backend for the game engine, API routes, and player statistics
+- React frontend for the visual Blackjack table, controls, HUD, and tutorial views
+- Local assets and documentation for the game experience and project planning
 
-# Requirements
-- Python 3.8 or higher
-- Node.js 14+ and npm (for frontend)
+## Team
+
+- Colby Fournier — Game Logic Developer and UI Designer
+- Cisco Harbeck — Game Logic Developer and Backend/Database Lead
+- Reymond Sanchez — Game Logic Developer and AI Systems Lead
+
+## Current Status
+
+The project is under active development. The backend provides the core game loop and API endpoints, while the frontend is being used to present the game experience to the player.
+
+## Requirements
+
+- Python 3.9 or newer
+- Node.js 18+ and npm
 - pip
 
-# Installation
+## Setup
 
-1. Clone the repository
+1. Clone the project
    ```bash
    git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
    cd senior_project_2026_ACE
    ```
 
-2. Set up backend (Python/Flask)
+2. Create and activate a Python virtual environment
    ```bash
-   # Create virtual environment
    python -m venv venv
-   
-   # Activate on Windows
    venv\Scripts\activate
-   
-   # Activate on Mac/Linux
+   ```
+
+   On macOS/Linux:
+   ```bash
    source venv/bin/activate
-   
-   # Install dependencies
+   ```
+
+3. Install backend dependencies
+   ```bash
    pip install -r backend/requirements.txt
    ```
 
-3. Set up frontend (React)
+4. Install frontend dependencies
    ```bash
    cd frontend
    npm install
    cd ..
    ```
 
-4. Run the application
-   ```bash
-   # Start backend (from project root)
-   python backend/app.py
-   
-   # In another terminal, start frontend
-   cd frontend
-   npm start
-   ```
+## Running the App
 
-The application will be available at `http://localhost:3000`
-
-# Project Structure
-
+Start the backend from the project root:
+```bash
+python backend/app.py
 ```
+
+In a second terminal, start the frontend:
+```bash
+cd frontend
+npm start
+```
+
+The frontend is typically available at http://localhost:3000, while the Flask API runs on the backend server.
+
+## Project Structure
+
+```text
 senior_project_2026_ACE/
-├── backend/
-│   ├── app.py                    # Flask API server and routes
-│   ├── requirements.txt          # Python dependencies
-│   ├── game/                     # Core game logic
-│   │   ├── __init__.py
-│   │   ├── card.py              # Card class and operations
-│   │   ├── deck.py              # Deck management and card dealing
-│   │   ├── hand.py              # Hand evaluation and game logic
-│   │   ├── player.py            # Player state and chip management
-│   │   └── rules.py             # Casino rules (dealer logic, win determination)
-│   ├── ai/                       # AI Strategy Engine
-│   │   ├── __init__.py
-│   │   ├── strategy.py          # Basic strategy lookup table and recommendations
-│   │   └── advise.py            # AI reasoning and explanation generation
-│   └── database/                # Data persistence layer
-│       ├── __init__.py
-│       ├── db.py                # SQLite database initialization and connection
-│       └── stats.py             # Player statistics and session tracking
-│
-├── frontend/
-│   ├── public/                  # Static assets
-│   ├── src/
-│   │   ├── index.js            # React entry point
-│   │   ├── App.jsx             # Main application component and routing
-│   │   ├── components/         # Reusable React components
-│   │   │   ├── Table.jsx       # Game table visualization
-│   │   │   ├── Hand.jsx        # Hand display (player and dealer)
-│   │   │   ├── Card.jsx        # Individual card component
-│   │   │   ├── Menu.jsx        # Main menu and game mode selection
-│   │   │   ├── Hud.jsx         # Heads-up display (chips, bet, stats)
-│   │   │   └── Tutorial.jsx    # Interactive tutorial mode
-│   │   └── [styling TBD]       # CSS/CSS-in-JS (to be finalized)
-│   ├── package.json            # npm dependencies
-│   └── .gitignore
-│
+├── .git/                          # Git metadata
+├── .gitignore
+├── .vscode/                       # VS Code workspace settings
 ├── assets/
-│   ├── cards/                  # Card images and sprites
-│   └── ui/                     # UI graphics and icons
-│
+│   └── cards/
+│       └── fonts/
+│           └── sounds/
+│               └── images/        # Empty asset folder for future art/audio files
+├── backend/
+│   ├── .env                       # Local environment variables
+│   ├── __init__.py
+│   ├── app.py                     # Flask app and API routes
+│   ├── requirements.txt           # Python dependencies
+│   ├── test_app.py                # Backend API tests
+│   ├── ai/
+│   │   ├── __init__.py
+│   │   ├── advise.py
+│   │   ├── counting.py
+│   │   ├── count_advise.py
+│   │   └── strategy.py
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── db.py
+│   │   ├── stats.py
+│   │   ├── test_db.py
+│   │   └── test_stats.py
+│   └── game/
+│       ├── __init__.py
+│       ├── card.py
+│       ├── deck.py
+│       ├── hand.py
+│       ├── player.py
+│       └── rules.py
 ├── docs/
-│   ├── Project Proposal.pdf
+│   ├── 5_10 Project Proposal.pdf
+│   ├── Design Doc.pdf
 │   └── Project Plan.pdf
-│
-├── README.md
-└── .gitignore
-
+├── frontend/
+│   ├── .gitignore
+│   ├── package-lock.json
+│   ├── package.json               # React app dependencies and scripts
+│   ├── README.md
+│   ├── public/
+│   │   ├── index.html
+│   │   ├── manifest.json
+│   │   ├── robots.txt
+│   │   └── ...
+│   └── src/
+│       ├── App.css
+│       ├── App.js
+│       ├── index.css
+│       ├── index.js
+│       └── components/
+│           ├── Card.jsx
+│           ├── Hand.css
+│           ├── Hand.jsx
+│           ├── Hud.css
+│           ├── Hud.jsx
+│           ├── Menu.css
+│           ├── Menu.jsx
+│           ├── Stats.css
+│           ├── Stats.jsx
+│           ├── Table.css
+│           ├── Table.jsx
+│           └── Tutorial.css
+│           └── Tutorial.jsx
+├── venv/                           # Python virtual environment
+└── README.md
 ```
 
-# Features
+## Features
 
-## Core Gameplay
-- Full Blackjack gameplay loop (deal, hit, stand, double down)
-- Dealer AI following standard casino rules
-- Virtual chip and bankroll system
-- Hand management with bust/blackjack detection
+### Gameplay
+- Blackjack round flow with deal, hit, stand, and double-down actions
+- Dealer logic and winner determination
+- Player chip/bankroll management
 
-## AI & Learning
-- Real-time basic strategy hint engine
-- Post-round recap with optimal play explanation
-- Educational feedback when suboptimal moves are made
-- Statistically optimal move recommendations for every hand scenario
+### Learning Support
+- Strategy hints and educational feedback during play
+- Session-based and saved player statistics
 
-## Player Experience
-- Web-based React UI (currently in development)
-- Guided tutorial mode for new players
-- Help and glossary screen
-- Responsive game table visualization
+### User Experience
+- Web-based interface for gameplay and interaction
+- Menu, tutorial, and HUD components for player guidance
 
-## Data & Statistics
-- PostgreSQL stat tracking (hands played, win rate, net chip balance)
-- Session history storage and retrieval
-- Player progress tracking across multiple sessions
+## Technology Stack
 
-# Technology Stack
+| Area | Technology |
+|------|------------|
+| Backend | Python, Flask |
+| API | Flask-CORS, JSON endpoints |
+| Database | SQLite-based persistence |
+| Frontend | React, Create React App |
+| Package Management | pip, npm |
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Backend | Python | 3.8+ |
-| API Server | Flask | 3.0.3 |
-| CORS Support | Flask-CORS | 4.0.1 |
-| Database | SQLite | Built-in |
-| Frontend | React | Latest |
-| Build Tool | Create React App or Vite | TBD |
+## Testing
 
+The backend includes test files for application and database behavior. To run the test suite:
 
-# Contributing
+```bash
+python -m pytest
+```
 
-See team members section above. For development guidelines, refer to code comments and the design document.
+## Contributing
 
-# License
+Contributions are welcome. Please coordinate with the team members listed above and keep the backend/frontend separation consistent while making changes.
 
-[To be determined]
+## License
+
+License details are still being finalized for this project.
