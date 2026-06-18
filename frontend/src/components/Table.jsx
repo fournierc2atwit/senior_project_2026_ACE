@@ -155,8 +155,13 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       <div className="table-dealer-zone">
         <p className="zone-label">DEALER</p>
         {dealerHand
-          ? <Hand cards={dealerHand.cards} total={dealerHand.total} />
-          : <div className="zone-placeholder">Waiting for deal...</div>}
+  ? <Hand cards={dealerHand.cards} total={dealerHand.total} />
+  : (
+    <div className="zone-idle">
+      <div className="idle-card" />
+      <div className="idle-card" />
+    </div>
+  )}
       </div>
 
       <div className="table-divider" />
@@ -164,8 +169,13 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       <div className="table-player-zone">
         <p className="zone-label">YOUR HAND</p>
         {playerHand
-          ? <Hand cards={playerHand.cards} total={playerHand.total} bust={outcome === "lose" && playerHand?.bust} />
-          : <div className="zone-placeholder">Place your bet to begin</div>}
+  ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
+  : (
+    <div className="zone-idle">
+      <div className="idle-card" />
+      <div className="idle-card" />
+    </div>
+  )}
       </div>
 
       <Hud chips={chips} bet={bet} />
