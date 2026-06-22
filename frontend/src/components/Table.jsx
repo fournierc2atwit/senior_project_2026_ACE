@@ -7,16 +7,22 @@ import "./Table.css";
 const CHIP_AMOUNTS = [10, 25, 50, 100];
 
 export default function Table({ onNavigate, playerName, initialChips }) {
-  const [phase, setPhase]           = useState("betting");
-  const [playerHand, setPlayerHand] = useState(null);
-  const [dealerHand, setDealerHand] = useState(null);
-  const [chips, setChips]           = useState(initialChips ?? 1000);
-  const [bet, setBet]               = useState(0);
-  const [outcome, setOutcome]       = useState(null);
-  const [message, setMessage]       = useState("");
-  const [hint, setHint]             = useState(null);
-  const [error, setError]           = useState("");
-  const [loading, setLoading]       = useState(false);
+  const [phase, setPhase]                 = useState("betting");
+  const [playerHand, setPlayerHand]       = useState(null);
+  const [dealerHand, setDealerHand]       = useState(null);
+  const [chips, setChips]                 = useState(initialChips ?? 1000);
+  const [bet, setBet]                     = useState(0);
+  const [outcome, setOutcome]             = useState(null);
+  const [message, setMessage]             = useState("");
+  const [hint, setHint]                   = useState(null);
+  const [error, setError]                 = useState("");
+  const [loading, setLoading]             = useState(false);
+
+  // ── Split-related state ──────────────────────────────────────
+  const [handCount, setHandCount]         = useState(1);
+  const [activeHandIndex, setActiveHandIndex] = useState(0);
+  const [canSplit, setCanSplit]           = useState(false);
+  const [handNote, setHandNote]           = useState("");
 
   const clearError = () => setError("");
 
@@ -37,6 +43,10 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
+      setHandCount(res.data.hand_count ?? 1);
+      setActiveHandIndex(res.data.active_hand_index ?? 0);
+      setCanSplit(res.data.can_split ?? false);
+      setHandNote("");
       setPhase("playing");
       fetchHint();
     } catch { setError("Failed to deal. Try again."); }
@@ -50,18 +60,43 @@ export default function Table({ onNavigate, playerName, initialChips }) {
     } catch { setHint(null); }
   };
 
+  // ── Shared handler for hit / stand / double responses ─────────
+  const processActionResponse = (res) => {
+    setChips(res.data.chips);
+
+    // Round fully resolved (all hands done)
+    if ("outcome" in res.data) {
+      if (res.data.dealer_hand) setDealerHand(res.data.dealer_hand);
+      setOutcome(res.data.outcome);
+      setMessage(res.data.message);
+      setPhase("result");
+      setHint(null);
+      setHandNote("");
+      return;
+    }
+
+    // Still playing — either same hand continues or moved to next hand
+    const movedToNextHand = res.data.active_hand_index !== activeHandIndex;
+
+    setPlayerHand(res.data.player_hand);
+    setHandCount(res.data.hand_count ?? handCount);
+    setActiveHandIndex(res.data.active_hand_index ?? activeHandIndex);
+    setCanSplit(res.data.can_split ?? false);
+
+    if (res.data.bust && movedToNextHand) {
+      setHandNote(`Hand ${activeHandIndex + 1} busted — moving to Hand ${res.data.active_hand_index + 1}.`);
+    } else {
+      setHandNote("");
+    }
+
+    fetchHint();
+  };
+
   const handleHit = async () => {
     setLoading(true);
     try {
       const res = await axios.post("/api/hit");
-      setPlayerHand(res.data.player_hand);
-      setChips(res.data.chips);
-      if (res.data.bust) {
-        setOutcome("lose");
-        setMessage("Bust — You lose.");
-        setPhase("result");
-        setHint(null);
-      } else { fetchHint(); }
+      processActionResponse(res);
     } catch { setError("Failed to hit. Try again."); }
     setLoading(false);
   };
@@ -70,12 +105,7 @@ export default function Table({ onNavigate, playerName, initialChips }) {
     setLoading(true);
     try {
       const res = await axios.post("/api/stand");
-      setDealerHand(res.data.dealer_hand);
-      setChips(res.data.chips);
-      setOutcome(res.data.outcome);
-      setMessage(res.data.message);
-      setPhase("result");
-      setHint(null);
+      processActionResponse(res);
     } catch { setError("Failed to stand. Try again."); }
     setLoading(false);
   };
@@ -84,14 +114,23 @@ export default function Table({ onNavigate, playerName, initialChips }) {
     setLoading(true);
     try {
       const res = await axios.post("/api/double");
-      setPlayerHand(res.data.player_hand);
-      setDealerHand(res.data.dealer_hand);
-      setChips(res.data.chips);
-      setOutcome(res.data.outcome);
-      setMessage(res.data.message);
-      setPhase("result");
-      setHint(null);
+      processActionResponse(res);
     } catch { setError("Not enough chips to double down."); }
+    setLoading(false);
+  };
+
+  const handleSplit = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.post("/api/split");
+      setPlayerHand(res.data.player_hand);
+      setChips(res.data.chips);
+      setHandCount(res.data.hand_count ?? 2);
+      setActiveHandIndex(res.data.active_hand_index ?? 0);
+      setCanSplit(res.data.can_split ?? false);
+      setHandNote("Hand split! Playing Hand 1 first.");
+      fetchHint();
+    } catch { setError("Unable to split. Check your chips and try again."); }
     setLoading(false);
   };
 
@@ -103,6 +142,10 @@ export default function Table({ onNavigate, playerName, initialChips }) {
     setOutcome(null);
     setMessage("");
     setHint(null);
+    setHandCount(1);
+    setActiveHandIndex(0);
+    setCanSplit(false);
+    setHandNote("");
     clearError();
   };
 
@@ -116,6 +159,10 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       setMessage("");
       setPlayerHand(null);
       setDealerHand(null);
+      setHandCount(1);
+      setActiveHandIndex(0);
+      setCanSplit(false);
+      setHandNote("");
       setPhase("betting");
     } catch { setError("Failed to reset. Try again."); }
     setLoading(false);
@@ -136,10 +183,9 @@ export default function Table({ onNavigate, playerName, initialChips }) {
     } catch (err) {
       console.error("Failed to save before menu", err);
     }
-
     onNavigate("menu");
   };
-  
+
   return (
     <div className="table-root">
       <div className="table-felt" />
@@ -155,30 +201,39 @@ export default function Table({ onNavigate, playerName, initialChips }) {
       <div className="table-dealer-zone">
         <p className="zone-label">DEALER</p>
         {dealerHand
-  ? <Hand cards={dealerHand.cards} total={dealerHand.total} />
-  : (
-    <div className="zone-idle">
-      <div className="idle-card" />
-      <div className="idle-card" />
-    </div>
-  )}
+          ? <Hand cards={dealerHand.cards} total={dealerHand.total} />
+          : (
+            <div className="zone-idle">
+              <div className="idle-card" />
+              <div className="idle-card" />
+            </div>
+          )}
       </div>
 
       <div className="table-divider" />
 
       <div className="table-player-zone">
-        <p className="zone-label">YOUR HAND</p>
+        <p className="zone-label">
+          YOUR HAND
+          {handCount > 1 && (
+            <span className="hand-indicator"> — Hand {activeHandIndex + 1} of {handCount}</span>
+          )}
+        </p>
         {playerHand
-  ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
-  : (
-    <div className="zone-idle">
-      <div className="idle-card" />
-      <div className="idle-card" />
-    </div>
-  )}
+          ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
+          : (
+            <div className="zone-idle">
+              <div className="idle-card" />
+              <div className="idle-card" />
+            </div>
+          )}
       </div>
 
       <Hud chips={chips} bet={bet} />
+
+      {handNote && phase === "playing" && (
+        <div className="hand-note-banner">{handNote}</div>
+      )}
 
       {hint && phase === "playing" && (
         <div className="hint-banner">
@@ -230,6 +285,9 @@ export default function Table({ onNavigate, playerName, initialChips }) {
             <button className="action-btn btn-hit"    onClick={handleHit}    disabled={loading}>Hit</button>
             <button className="action-btn btn-stand"  onClick={handleStand}  disabled={loading}>Stand</button>
             <button className="action-btn btn-double" onClick={handleDouble} disabled={loading}>Double Down</button>
+            {canSplit && (
+              <button className="action-btn btn-split" onClick={handleSplit} disabled={loading}>Split</button>
+            )}
           </div>
         )}
 

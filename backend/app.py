@@ -65,6 +65,102 @@ def save_deck(deck):
 def save_hand(hand):
     return [{"suit": c.suit, "rank": c.rank} for c in hand.cards]
 
+def save_player_hands(hands):
+    return [save_hand(hand) for hand in hands]
+
+def load_player_hands(hands_list):
+    return [load_hand(card_list) for card_list in hands_list]
+
+def get_player_hands():
+    if "player_hands" in session:
+        return load_player_hands(session["player_hands"])
+    if "player_hand" in session:
+        return [load_hand(session["player_hand"])]
+    return []
+
+def get_hand_statuses():
+    statuses = session.get("hand_statuses")
+    hands = session.get("player_hands")
+    if statuses and hands and len(statuses) == len(hands):
+        return statuses
+    return ["active"] * len(get_player_hands())
+
+def get_active_hand_index():
+    statuses = get_hand_statuses()
+    for idx, status in enumerate(statuses):
+        if status == "active":
+            return idx
+    return session.get("active_hand_index", 0)
+
+def persist_player_hands(hands, bets, active_index=0, statuses=None):
+    session["player_hands"] = save_player_hands(hands)
+    session["hand_bets"] = bets
+    session["bet"] = sum(bets)
+    session["active_hand_index"] = active_index
+    if statuses is None:
+        statuses = ["active"] + ["pending"] * (len(hands) - 1)
+    session["hand_statuses"] = statuses
+
+def advance_to_next_hand(statuses, current_index):
+    for idx in range(current_index + 1, len(statuses)):
+        if statuses[idx] == "pending":
+            return idx
+    return None
+
+def apply_hand_outcome(result, bet):
+    chips = session.get("chips", 0)
+
+    if result == "blackjack":
+        chips += bet + int(bet * 1.5)
+        session["wins"] = session.get("wins", 0) + 1
+    elif result == "win":
+        chips += bet * 2
+        session["wins"] = session.get("wins", 0) + 1
+    elif result == "push":
+        chips += bet
+        session["pushes"] = session.get("pushes", 0) + 1
+    else:
+        session["losses"] = session.get("losses", 0) + 1
+
+    session["chips"] = chips
+
+def resolve_round(player_hands, dealer_hand, hand_bets, deck):
+    Rules.run_dealer(dealer_hand, deck)
+    results = []
+    for hand, bet in zip(player_hands, hand_bets):
+        result = Rules.determine_winner(hand, dealer_hand)
+        results.append(result)
+        apply_hand_outcome(result, bet)
+    return results
+
+def summarize_split_outcome(results):
+    wins = sum(1 for r in results if r in ("win", "blackjack"))
+    losses = results.count("lose")
+
+    if wins > losses:
+        return "win"
+    if losses > wins:
+        return "lose"
+    return "push"
+
+def split_outcome_message(results):
+    if len(results) == 1:
+        return _outcome_message(results[0])
+
+    wins = sum(1 for r in results if r in ("win", "blackjack"))
+    pushes = results.count("push")
+    losses = results.count("lose")
+
+    parts = []
+    if wins:
+        parts.append(f"{wins} win{'s' if wins != 1 else ''}")
+    if pushes:
+        parts.append(f"{pushes} push{'es' if pushes != 1 else ''}")
+    if losses:
+        parts.append(f"{losses} loss{'es' if losses != 1 else ''}")
+
+    return ", ".join(parts).capitalize() + "."
+
 def apply_outcome(result):
     """
     Updates win/loss/push counters and chips in the session
@@ -98,7 +194,7 @@ def apply_outcome(result):
 
 def clear_round():
     """Remove active round data from session after a round ends."""
-    for key in ["player_hand", "dealer_hand", "deck", "bet"]:
+    for key in ["player_hand", "player_hands", "hand_bets", "hand_statuses", "active_hand_index", "dealer_hand", "deck", "bet"]:
         session.pop(key, None)
 
 # ------------------------------------------------------------------
@@ -168,103 +264,178 @@ def deal():
     player_hand.add_card(deck.deal())
     dealer_hand.add_card(deck.deal())
 
-    session["deck"]        = save_deck(deck)
-    session["player_hand"] = save_hand(player_hand)
+    session["deck"]          = save_deck(deck)
+    persist_player_hands([player_hand], [bet], active_index=0)
     session["dealer_hand"] = save_hand(dealer_hand)
-    session["bet"]         = bet
     session["chips"]       = chips - bet
 
     return jsonify({
-        "status":      "success",
-        "player_hand": serialize_hand(player_hand),
-        "dealer_hand": serialize_hand(dealer_hand, hide_second=True),
-        "chips":       session["chips"],
-        "bet":         bet,
+        "status":         "success",
+        "player_hand":    serialize_hand(player_hand),
+        "dealer_hand":    serialize_hand(dealer_hand, hide_second=True),
+        "chips":          session["chips"],
+        "bet":            bet,
+        "hand_count":     1,
+        "active_hand_index": 0,
+        "can_split":      player_hand.is_pair(),
     })
 
 
 @app.route("/api/hit", methods=["POST"])
 def hit():
-    """Deal one card to the player and check for bust."""
-    if "player_hand" not in session:
+    """Deal one card to the active player hand and continue play."""
+    if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    deck        = load_deck(session["deck"])
-    player_hand = load_hand(session["player_hand"])
+    deck = load_deck(session["deck"])
+    player_hands = get_player_hands()
+    hand_bets = session.get("hand_bets", [session.get("bet", 0)])
+    statuses = get_hand_statuses()
+    active_index = get_active_hand_index()
 
+    player_hand = player_hands[active_index]
     player_hand.add_card(deck.deal())
 
-    session["deck"]        = save_deck(deck)
-    session["player_hand"] = save_hand(player_hand)
+    if player_hand.is_bust():
+        statuses[active_index] = "bust"
+        next_index = advance_to_next_hand(statuses, active_index)
 
-    bust = player_hand.is_bust()
+        if next_index is not None:
+            statuses[next_index] = "active"
+            persist_player_hands(player_hands, hand_bets, next_index, statuses)
+            session["deck"] = save_deck(deck)
+            return jsonify({
+                "status":           "success",
+                "player_hand":      serialize_hand(player_hands[next_index]),
+                "hand_count":       len(player_hands),
+                "active_hand_index": next_index,
+                "can_split":        False,
+                "bust":             True,
+                "chips":            session.get("chips"),
+            })
 
-    # If bust, auto-resolve the round
-    if bust:
-        chips = apply_outcome("lose")
+        dealer_hand = load_hand(session["dealer_hand"])
+        results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
+        summary = summarize_split_outcome(results)
+        message = split_outcome_message(results)
         _persist_stats()
         clear_round()
 
+        return jsonify({
+            "status":      "success",
+            "player_hand": serialize_hand(player_hand),
+            "dealer_hand": serialize_hand(dealer_hand),
+            "outcome":     summary,
+            "message":     message,
+            "chips":       session.get("chips"),
+            "bust":        True,
+        })
+
+    persist_player_hands(player_hands, hand_bets, active_index, statuses)
+    session["deck"] = save_deck(deck)
+
     return jsonify({
-        "status":      "success",
-        "player_hand": serialize_hand(player_hand),
-        "bust":        bust,
-        "chips":       session.get("chips"),
+        "status":           "success",
+        "player_hand":      serialize_hand(player_hand),
+        "hand_count":       len(player_hands),
+        "active_hand_index": active_index,
+        "can_split":        False,
+        "bust":             False,
+        "chips":            session.get("chips"),
     })
 
 
 @app.route("/api/stand", methods=["POST"])
 def stand():
-    """End the player's turn, run the dealer, and resolve the round."""
-    if "player_hand" not in session:
+    """End the player's turn for the current hand and continue or resolve."""
+    if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    deck        = load_deck(session["deck"])
-    player_hand = load_hand(session["player_hand"])
+    deck = load_deck(session["deck"])
+    player_hands = get_player_hands()
+    hand_bets = session.get("hand_bets", [session.get("bet", 0)])
+    statuses = get_hand_statuses()
+    active_index = get_active_hand_index()
+
+    statuses[active_index] = "stood"
+    next_index = advance_to_next_hand(statuses, active_index)
+
+    if next_index is not None:
+        statuses[next_index] = "active"
+        persist_player_hands(player_hands, hand_bets, next_index, statuses)
+        session["deck"] = save_deck(deck)
+        return jsonify({
+            "status":           "success",
+            "player_hand":      serialize_hand(player_hands[next_index]),
+            "hand_count":       len(player_hands),
+            "active_hand_index": next_index,
+            "can_split":        False,
+            "chips":            session.get("chips"),
+        })
+
     dealer_hand = load_hand(session["dealer_hand"])
-
-    Rules.run_dealer(dealer_hand, deck)
-
-    result = Rules.determine_winner(player_hand, dealer_hand)
-    chips  = apply_outcome(result)
+    results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
+    summary = summarize_split_outcome(results)
+    message = split_outcome_message(results)
     _persist_stats()
     clear_round()
 
     return jsonify({
         "status":      "success",
         "dealer_hand": serialize_hand(dealer_hand),
-        "outcome":     result,
-        "message":     _outcome_message(result),
-        "chips":       chips,
+        "outcome":     summary,
+        "message":     message,
+        "chips":       session.get("chips"),
     })
 
 
 @app.route("/api/double", methods=["POST"])
 def double():
-    """Double the bet, deal one card, run the dealer, and resolve."""
-    if "player_hand" not in session:
+    """Double the current hand's bet, deal one card, and continue or resolve."""
+    if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
+    deck = load_deck(session["deck"])
+    player_hands = get_player_hands()
+    hand_bets = session.get("hand_bets", [session.get("bet", 0)])
+    statuses = get_hand_statuses()
+    active_index = get_active_hand_index()
+    player_hand = player_hands[active_index]
+    current_bet = hand_bets[active_index]
     chips = session.get("chips", 0)
-    bet   = session.get("bet", 0)
 
-    if bet > chips:
+    if current_bet > chips:
         return jsonify({ "status": "error", "message": "Not enough chips to double down." }), 400
+    if player_hand.card_count() != 2:
+        return jsonify({ "status": "error", "message": "Double down is only allowed on the first two cards." }), 400
 
-    deck        = load_deck(session["deck"])
-    player_hand = load_hand(session["player_hand"])
-    dealer_hand = load_hand(session["dealer_hand"])
-
-    # Deduct the extra bet and double it
-    session["chips"] = chips - bet
-    session["bet"]   = bet * 2
+    session["chips"] = chips - current_bet
+    hand_bets[active_index] = current_bet * 2
 
     player_hand.add_card(deck.deal())
+    if player_hand.is_bust():
+        statuses[active_index] = "bust"
+    else:
+        statuses[active_index] = "stood"
 
-    Rules.run_dealer(dealer_hand, deck)
+    next_index = advance_to_next_hand(statuses, active_index)
+    if next_index is not None:
+        statuses[next_index] = "active"
+        persist_player_hands(player_hands, hand_bets, next_index, statuses)
+        session["deck"] = save_deck(deck)
+        return jsonify({
+            "status":           "success",
+            "player_hand":      serialize_hand(player_hands[next_index]),
+            "hand_count":       len(player_hands),
+            "active_hand_index": next_index,
+            "can_split":        False,
+            "chips":            session.get("chips"),
+        })
 
-    result = Rules.determine_winner(player_hand, dealer_hand)
-    chips  = apply_outcome(result)
+    dealer_hand = load_hand(session["dealer_hand"])
+    results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
+    summary = summarize_split_outcome(results)
+    message = split_outcome_message(results)
     _persist_stats()
     clear_round()
 
@@ -272,9 +443,50 @@ def double():
         "status":      "success",
         "player_hand": serialize_hand(player_hand),
         "dealer_hand": serialize_hand(dealer_hand),
-        "outcome":     result,
-        "message":     _outcome_message(result),
-        "chips":       chips,
+        "outcome":     summary,
+        "message":     message,
+        "chips":       session.get("chips"),
+    })
+
+
+@app.route("/api/split", methods=["POST"])
+def split():
+    """Split a starting pair into two hands and continue play."""
+    if "player_hands" not in session and "player_hand" not in session:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    player_hands = get_player_hands()
+    hand_bets = session.get("hand_bets", [session.get("bet", 0)])
+    if len(player_hands) != 1 or player_hands[0].card_count() != 2:
+        return jsonify({ "status": "error", "message": "Split is only allowed on a fresh pair." }), 400
+
+    player_hand = player_hands[0]
+    if not player_hand.is_pair():
+        return jsonify({ "status": "error", "message": "Split is only allowed when both cards match." }), 400
+
+    bet_amount = hand_bets[0]
+    chips = session.get("chips", 0)
+    if bet_amount > chips:
+        return jsonify({ "status": "error", "message": "Not enough chips to split." }), 400
+
+    deck = load_deck(session["deck"])
+    first_card, second_card = player_hand.cards
+    hand1 = Hand(); hand1.add_card(first_card)
+    hand2 = Hand(); hand2.add_card(second_card)
+    hand1.add_card(deck.deal())
+    hand2.add_card(deck.deal())
+
+    session["chips"] = chips - bet_amount
+    persist_player_hands([hand1, hand2], [bet_amount, bet_amount], active_index=0, statuses=["active", "pending"])
+    session["deck"] = save_deck(deck)
+
+    return jsonify({
+        "status":           "success",
+        "player_hand":      serialize_hand(hand1),
+        "hand_count":       2,
+        "active_hand_index": 0,
+        "can_split":        False,
+        "chips":            session.get("chips"),
     })
 
 from ai.advise import Advisor
@@ -284,10 +496,15 @@ _advisor = Advisor()
 @app.route("/api/hint", methods=["GET"])
 def hint():
     """Return the basic strategy recommendation for the current hand."""
-    if "player_hand" not in session or "dealer_hand" not in session:
+    if "dealer_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    player_hand = load_hand(session["player_hand"])
+    player_hands = get_player_hands()
+    if not player_hands:
+        return jsonify({ "status": "error", "message": "No active round." }), 400
+
+    active_index = get_active_hand_index()
+    player_hand = player_hands[active_index]
     dealer_hand = load_hand(session["dealer_hand"])
 
     # Dealer upcard is always the first card
