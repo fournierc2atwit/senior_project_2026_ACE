@@ -9,19 +9,19 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 try:
-    from game.card import Card
-    from game.deck import Deck
-    from game.hand import Hand
-    from game.player import Player
-    from game.rules import Rules
+    from backend.game.blackjack.card import Card
+    from backend.game.blackjack.deck import Deck
+    from backend.game.blackjack.hand import Hand
+    from backend.game.blackjack.player import Player
+    from backend.game.blackjack.rules import Rules
     from database.db import create_tables
     from database.stats import save_stats, get_player_stats, get_all_player_stats
 except ImportError:
-    from backend.game.card import Card
-    from backend.game.deck import Deck
-    from backend.game.hand import Hand
-    from backend.game.player import Player
-    from backend.game.rules import Rules
+    from backend.game.blackjack.card import Card
+    from backend.game.blackjack.deck import Deck
+    from backend.game.blackjack.hand import Hand
+    from backend.game.blackjack.player import Player
+    from backend.game.blackjack.rules import Rules
     from backend.database.db import create_tables
     from backend.database.stats import save_stats, get_player_stats, get_all_player_stats
 

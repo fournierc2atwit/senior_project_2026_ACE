@@ -1,4 +1,4 @@
-from game.card import Card
+from backend.game.blackjack.card import Card
 class Hand:
 
     # Goals:
@@ -75,7 +75,7 @@ class Hand:
 
 # Test cases
 if __name__ == "__main__":
-    from game.deck import Deck
+    from backend.game.blackjack.deck import Deck
  
     print("=== Hand Tests ===\n")
  

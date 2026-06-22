@@ -198,8 +198,8 @@ class CountAdvisor:
 # Self-test — run with:  python -m backend.ai.count_advise
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    from backend.game.card import Card
-    from backend.game.hand import Hand
+    from backend.game.blackjack.card import Card
+    from backend.game.blackjack.hand import Hand
     from backend.ai.counting import CardCounter
 
     def hand(*pairs):

@@ -173,8 +173,8 @@ class Advisor:
 # Run with:  python -m backend.ai.advise
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
-    from backend.game.card import Card
-    from backend.game.hand import Hand
+    from backend.game.blackjack.card import Card
+    from backend.game.blackjack.hand import Hand
  
     def hand(*pairs):
         h = Hand()

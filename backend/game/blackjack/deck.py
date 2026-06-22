@@ -1,5 +1,5 @@
 import random
-from game.card import Card
+from backend.game.blackjack.card import Card
 
 class Deck:
 
