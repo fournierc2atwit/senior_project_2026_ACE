@@ -5,25 +5,22 @@ from flask import Flask, session, request, jsonify
 from flask_cors import CORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
+# Put project root on sys.path so package imports resolve when running
+# `python app.py` from inside the `backend/` folder.
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-try:
-    from backend.game.blackjack.card import Card
-    from backend.game.blackjack.deck import Deck
-    from backend.game.blackjack.hand import Hand
-    from backend.game.blackjack.player import Player
-    from backend.game.blackjack.rules import Rules
-    from database.db import create_tables
-    from database.stats import save_stats, get_player_stats, get_all_player_stats
-except ImportError:
-    from backend.game.blackjack.card import Card
-    from backend.game.blackjack.deck import Deck
-    from backend.game.blackjack.hand import Hand
-    from backend.game.blackjack.player import Player
-    from backend.game.blackjack.rules import Rules
-    from backend.database.db import create_tables
-    from backend.database.stats import save_stats, get_player_stats, get_all_player_stats
+# Use package-style imports (rely on PROJECT_ROOT being on sys.path)
+from game.blackjack.card import Card
+from game.blackjack.deck import Deck
+from game.blackjack.hand import Hand
+from game.blackjack.player import Player
+from game.blackjack.rules import Rules
+from game.roulette.wheel import Wheel
+from game.roulette.rules import Rules as RouletteRules
+from database.db import create_tables
+from database.stats import save_stats, get_player_stats, get_all_player_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -31,6 +28,9 @@ CORS(app, supports_credentials=True)
 
 # Create database tables on startup if they don't exist
 create_tables()
+
+# Roulette wheel instance — stateless, created once at startup
+_wheel = Wheel()
 
 # ------------------------------------------------------------------
 # Helpers
@@ -72,34 +72,23 @@ def load_player_hands(hands_list):
     return [load_hand(card_list) for card_list in hands_list]
 
 def get_player_hands():
-    if "player_hands" in session:
-        return load_player_hands(session["player_hands"])
-    if "player_hand" in session:
-        return [load_hand(session["player_hand"])]
-    return []
+    return (load_player_hands(session["player_hands"]) if "player_hands" in session
+            else ([load_hand(session["player_hand"])] if "player_hand" in session else []))
 
 def get_hand_statuses():
     statuses = session.get("hand_statuses")
     hands = session.get("player_hands")
-    if statuses and hands and len(statuses) == len(hands):
-        return statuses
-    return ["active"] * len(get_player_hands())
+    return statuses if statuses and hands and len(statuses) == len(hands) else ["active"] * len(get_player_hands())
 
 def get_active_hand_index():
-    statuses = get_hand_statuses()
-    for idx, status in enumerate(statuses):
-        if status == "active":
-            return idx
-    return session.get("active_hand_index", 0)
+    return next((i for i, s in enumerate(get_hand_statuses()) if s == "active"), session.get("active_hand_index", 0))
 
 def persist_player_hands(hands, bets, active_index=0, statuses=None):
     session["player_hands"] = save_player_hands(hands)
     session["hand_bets"] = bets
     session["bet"] = sum(bets)
     session["active_hand_index"] = active_index
-    if statuses is None:
-        statuses = ["active"] + ["pending"] * (len(hands) - 1)
-    session["hand_statuses"] = statuses
+    session["hand_statuses"] = statuses if statuses is not None else ["active"] + ["pending"] * (len(hands) - 1)
 
 def advance_to_next_hand(statuses, current_index):
     for idx in range(current_index + 1, len(statuses)):
@@ -167,29 +156,18 @@ def apply_outcome(result):
     based on the round result string.
     Returns the updated chip count.
     """
-    chips  = session.get("chips", 0)
-    bet    = session.get("bet", 0)
-    wins   = session.get("wins", 0)
-    losses = session.get("losses", 0)
-    pushes = session.get("pushes", 0)
-
+    chips = session.get("chips", 0)
+    bet = session.get("bet", 0)
+    wins, losses, pushes = session.get("wins", 0), session.get("losses", 0), session.get("pushes", 0)
     if result == "blackjack":
-        chips += bet + int(bet * 1.5)
-        wins  += 1
+        chips += bet + int(bet * 1.5); wins += 1
     elif result == "win":
-        chips += bet * 2
-        wins  += 1
+        chips += bet * 2; wins += 1
     elif result == "push":
-        chips += bet
-        pushes += 1
+        chips += bet; pushes += 1
     else:
-        losses += 1  # bet already deducted at deal time
-
-    session["chips"]  = chips
-    session["wins"]   = wins
-    session["losses"] = losses
-    session["pushes"] = pushes
-
+        losses += 1
+    session.update({"chips": chips, "wins": wins, "losses": losses, "pushes": pushes})
     return chips
 
 def clear_round():
@@ -198,7 +176,7 @@ def clear_round():
         session.pop(key, None)
 
 # ------------------------------------------------------------------
-# Routes
+# Routes — Blackjack
 # ------------------------------------------------------------------
 
 @app.route("/api/new-game", methods=["POST"])
@@ -489,7 +467,11 @@ def split():
         "chips":            session.get("chips"),
     })
 
-from ai.advise import Advisor
+
+try:
+    from ai.advise import Advisor
+except ImportError:
+    from backend.ai.advise import Advisor
 
 _advisor = Advisor()
 
@@ -528,6 +510,72 @@ def hint():
         "raw_action":  rec["action"],
     })
 
+
+# ------------------------------------------------------------------
+# Routes — Roulette
+# ------------------------------------------------------------------
+
+@app.route("/api/roulette/spin", methods=["POST"])
+def roulette_spin():
+    """
+    Place a bet, spin the wheel, and resolve the result in one call.
+    Stateless — no session data persists between spins beyond chip balance.
+
+    Body: {
+        "bet_type":  "straight" | "color" | "parity" | "dozen",
+        "bet_value": <int|str depending on bet_type>,
+        "amount":    int
+    }
+    """
+    data      = request.get_json() or {}
+    bet_type  = data.get("bet_type")
+    bet_value = data.get("bet_value")
+    amount    = data.get("amount", 0)
+    chips     = session.get("chips", Player.STARTING_CHIPS)
+
+    if amount <= 0 or amount > chips:
+        return jsonify({ "status": "error", "message": "Invalid bet amount." }), 400
+
+    try:
+        RouletteRules.validate_bet(bet_type, bet_value, _wheel)
+    except ValueError as e:
+        return jsonify({ "status": "error", "message": str(e) }), 400
+
+    # Deduct the bet up front, same pattern as Blackjack's deal route
+    session["chips"] = chips - amount
+
+    number = _wheel.spin()
+    result = RouletteRules.resolve_bet(bet_type, bet_value, amount, _wheel, number)
+
+    new_chips = session["chips"] + result["total_return"]
+    session["chips"] = new_chips
+
+    # Update win/loss counters (reusing the same session keys as Blackjack
+    # keeps stats tracking and the database save consistent across games)
+    if result["won"]:
+        session["wins"] = session.get("wins", 0) + 1
+    else:
+        session["losses"] = session.get("losses", 0) + 1
+
+    _persist_stats()
+
+    return jsonify({
+        "status":       "success",
+        "number":       result["number"],
+        "color":        result["color"],
+        "won":          result["won"],
+        "bet_type":     bet_type,
+        "bet_value":    bet_value,
+        "amount":       amount,
+        "payout":       result["payout"],
+        "total_return": result["total_return"],
+        "chips":        new_chips,
+    })
+
+
+# ------------------------------------------------------------------
+# Routes — Stats / Database
+# ------------------------------------------------------------------
 
 @app.route("/api/stats", methods=["GET"])
 def stats():
@@ -588,6 +636,7 @@ def save():
     _persist_stats()
     return jsonify({ "status": "success", "message": "Stats saved." })
 
+
 @app.route("/api/leaderboard", methods=["GET"])
 def leaderboard():
     players = get_all_player_stats()
@@ -624,21 +673,11 @@ def _persist_stats():
     """Write current session stats to the database."""
     chips = session.get("chips", Player.STARTING_CHIPS)
     bankrupts = session.get("bankrupts", 0)
-
     if chips <= 0:
-       bankrupts += 1
-       chips = Player.STARTING_CHIPS
-       session["chips"] = chips
-       session["bankrupts"] = bankrupts
-
-    save_stats(
-       session.get("name", "Player"),
-       chips,
-       session.get("wins", 0),
-       session.get("losses", 0),
-       session.get("pushes", 0),
-       bankrupts,
-    )
+        bankrupts += 1
+        chips = Player.STARTING_CHIPS
+        session.update({"chips": chips, "bankrupts": bankrupts})
+    save_stats(session.get("name", "Player"), chips, session.get("wins", 0), session.get("losses", 0), session.get("pushes", 0), bankrupts)
 
 def _outcome_message(result):
     messages = {
