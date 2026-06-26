@@ -12,15 +12,15 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Use package-style imports (rely on PROJECT_ROOT being on sys.path)
-from backend.game.blackjack.card import Card
-from backend.game.blackjack.deck import Deck
-from backend.game.blackjack.hand import Hand
-from backend.game.blackjack.player import Player
-from backend.game.blackjack.rules import Rules
-from backend.game.roulette.wheel import Wheel
-from backend.game.roulette.rules import Rules as RouletteRules
-from backend.database.db import create_tables
-from backend.database.stats import save_stats, get_player_stats, get_all_player_stats
+from game.blackjack.card import Card
+from game.blackjack.deck import Deck
+from game.blackjack.hand import Hand
+from game.blackjack.player import Player
+from game.blackjack.rules import Rules
+from game.roulette.wheel import Wheel
+from game.roulette.rules import Rules as RouletteRules
+from database.db import create_tables
+from database.stats import save_stats, get_player_stats, get_all_player_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -34,6 +34,9 @@ except ValueError as exc:
 
 # Roulette wheel instance — stateless, created once at startup
 _wheel = Wheel()
+
+# Slot machine instance — stateless, created once at startup
+_slot_machine = SlotMachine()
 
 # ------------------------------------------------------------------
 # Helpers
@@ -584,6 +587,78 @@ def roulette_spin():
         "chips":        new_chips,
     })
 
+# ------------------------------------------------------------------
+# Routes — Slots
+# ------------------------------------------------------------------
+
+@app.route("/api/slots/spin", methods=["POST"])
+def slots_spin():
+    """
+    Place a chosen bet, spin the slot machine, and resolve the result.
+
+    Body example:
+    {
+        "amount": 100
+    }
+    """
+    data = request.get_json() or {}
+
+    # This is the bet amount chosen by the player/frontend
+    amount = data.get("amount", 0)
+
+    # Current player chips from session
+    chips = session.get("chips", Player.STARTING_CHIPS)
+
+    # Make sure amount is a number
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        return jsonify({
+            "status": "error",
+            "message": "Invalid bet amount."
+        }), 400
+
+    # Check if the bet is allowed and player has enough chips
+    try:
+        SlotRules.validate_bet(amount, chips)
+    except ValueError as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 400
+
+    # Deduct the chosen bet
+    session["chips"] = chips - amount
+
+    # Spin the slots and calculate result
+    result = SlotRules.resolve_spin(_slot_machine, amount)
+
+    # Add winnings/return back to chips
+    new_chips = session["chips"] + result["total_return"]
+    session["chips"] = new_chips
+
+    # Update win/loss stats
+    if result["won"]:
+        session["wins"] = session.get("wins", 0) + 1
+    else:
+        session["losses"] = session.get("losses", 0) + 1
+
+    # Save updated chips/stats to database
+    _persist_stats()
+
+    return jsonify({
+        "status": "success",
+        "game": "slots",
+        "reels": result["reels"],
+        "won": result["won"],
+        "result": result["result"],
+        "amount": amount,
+        "multiplier": result["multiplier"],
+        "payout": result["payout"],
+        "total_return": result["total_return"],
+        "chips": new_chips,
+        "message": result["message"],
+    })
 
 # ------------------------------------------------------------------
 # Routes — Stats / Database
