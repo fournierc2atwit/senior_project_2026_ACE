@@ -3,12 +3,11 @@
 :root {
   --felt: #1a4d2e;
   --gold: #c9a84c;
-  --gold-light: #e2c97e;
   --cream: #f0e6cc;
   --cream-dim: #c8b98a;
 }
 
-.roulette-root {
+.slots-root {
   position: relative;
   width: 100vw;
   min-height: 100vh;
@@ -23,7 +22,7 @@
   overflow: hidden;
 }
 
-.roulette-felt {
+.slots-felt {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at center, rgba(37,107,64,0.2) 0%, rgba(0,0,0,0.35) 100%);
@@ -43,105 +42,63 @@
   cursor: pointer;
 }
 
-.roulette-stage {
+.slots-panel {
   position: relative;
   z-index: 1;
-  width: min(95%, 860px);
+  width: min(95%, 760px);
   padding: 2rem;
   border: 1px solid rgba(201,168,76,0.2);
   background: rgba(0,0,0,0.42);
-  border-radius: 18px;
+  border-radius: 16px;
   display: grid;
   gap: 1.5rem;
 }
 
-.roulette-header h1 {
+.slots-header h1 {
   margin: 0 0 0.75rem;
   font-family: 'Playfair Display', serif;
   font-size: 3rem;
   color: var(--gold);
 }
 
-.roulette-header p {
+.slots-header p {
   margin: 0;
   color: var(--cream-dim);
   line-height: 1.5;
 }
 
-.roulette-board {
+.slots-info {
   display: grid;
-  grid-template-columns: 240px 1fr;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
-.wheel-panel,
-.bets-panel {
-  border-radius: 18px;
-  padding: 1.2rem;
+.slots-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border-radius: 12px;
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
 }
 
-.wheel-ring {
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  border: 10px solid rgba(201,168,76,0.3);
-  display: grid;
-  place-items: center;
-  margin: 0 auto;
-  background: radial-gradient(circle at 50% 50%, rgba(201,168,76,0.14) 0%, rgba(0,0,0,0.25) 100%);
-  box-shadow: inset 0 0 25px rgba(0,0,0,0.25);
-}
-
-.wheel-ring span {
-  color: var(--cream);
-  font-family: 'Playfair Display', serif;
-  font-size: 3.5rem;
-}
-
-.wheel-label {
-  margin-top: 1rem;
-  text-align: center;
-  color: var(--cream-dim);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.bets-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.bets-label {
+.slots-summary-label {
   color: var(--cream-dim);
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.8rem;
 }
 
-.bets-value {
+.slots-summary-value {
   color: var(--gold);
   font-family: 'Playfair Display', serif;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
 }
 
-.bets-help {
-  margin: 0;
-  color: var(--cream-dim);
-  line-height: 1.5;
-}
-
-@media (max-width: 760px) {
-  .roulette-board {
-    grid-template-columns: 1fr;
-  }
-
-  .wheel-ring {
-    width: 180px;
-    height: 180px;
-  }
+.slots-action-hint {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  color: var(--cream);
 }

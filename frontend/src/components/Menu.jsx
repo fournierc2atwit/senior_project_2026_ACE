@@ -2,16 +2,42 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import "./Menu.css";
 
-export default function Menu({ onNavigate, onSetName, onSetChips }) {
-  const [name, setName]         = useState("");
-  const [chips, setChips]       = useState(null);
+const GAME_OPTIONS = [
+  { id: "blackjack", label: "Blackjack", emoji: "♠" },
+  { id: "roulette", label: "Roulette", emoji: "◎" },
+  { id: "slots", label: "Slots", emoji: "🎰" },
+];
+
+export default function Menu({ onNavigate, onSetName, onSetChips, onSetGame, selectedGame: initialGame, playerName: initialName, playerChips: initialChips }) {
+  const [name, setName]         = useState(initialName || "");
+  const [chips, setChips]       = useState(initialChips ?? null);
   const [greeting, setGreeting] = useState("");
   const [loading, setLoading]   = useState(false);
   const [ready, setReady]       = useState(false);
+  const [selectedGame, setSelectedGame] = useState(initialGame || "blackjack");
+  const [gameMenuOpen, setGameMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setName(initialName || "");
+  }, [initialName]);
+
+  useEffect(() => {
+    setChips(initialChips ?? null);
+  }, [initialChips]);
+
+  useEffect(() => {
+    if (name && chips !== null) {
+      setGreeting(`Welcome back, ${name}.`);
+    }
+  }, [name, chips]);
 
   useEffect(() => {
     setTimeout(() => setReady(true), 100);
   }, []);
+
+  useEffect(() => {
+    if (onSetGame) onSetGame(selectedGame);
+  }, [onSetGame, selectedGame]);
 
   const handleStart = async () => {
     if (!name.trim()) return;
@@ -81,20 +107,46 @@ export default function Menu({ onNavigate, onSetName, onSetChips }) {
               <span className="menu-chips-value">${chips.toLocaleString()}</span>
             </p>
 
-            <div className="menu-buttons">
-              <button className="menu-btn menu-btn-play" onClick={() => onNavigate("game")}>
-                <span className="btn-icon">♠</span> Play
-              </button>
-              <button className="menu-btn menu-btn-tutorial" onClick={() => onNavigate("tutorial")}>
-                <span className="btn-icon">?</span> Tutorial
-              </button>
-              <button className="menu-btn menu-btn-stats" onClick={() => onNavigate("stats")}>
-                <span className="btn-icon">◈</span> Stats
-              </button>
-              <button className="menu-btn menu-btn-quit" onClick={() => window.close()}>
-                <span className="btn-icon">✕</span> Quit
-              </button>
-            </div>
+            {!gameMenuOpen ? (
+              <>
+                <div className="menu-buttons">
+                  <button className="menu-btn menu-btn-play" onClick={() => setGameMenuOpen(true)}>
+                    <span className="btn-icon">▶</span> Play
+                  </button>
+                  <button className="menu-btn menu-btn-tutorial" onClick={() => onNavigate("tutorial") }>
+                    <span className="btn-icon">?</span> Tutorial
+                  </button>
+                  <button className="menu-btn menu-btn-stats" onClick={() => onNavigate("stats") }>
+                    <span className="btn-icon">◈</span> Stats
+                  </button>
+                  <button className="menu-btn menu-btn-quit" onClick={() => window.close()}>
+                    <span className="btn-icon">✕</span> Quit
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="menu-game-list">
+                <p className="game-list-heading">Choose a game:</p>
+                {GAME_OPTIONS.map((game) => (
+                  <button
+                    key={game.id}
+                    type="button"
+                    className={`menu-btn game-list-button ${selectedGame === game.id ? "selected" : ""}`}
+                    onClick={() => {
+                      setSelectedGame(game.id);
+                      setGameMenuOpen(false);
+                      onNavigate("game", game.id);
+                    }}
+                  >
+                    <span className="btn-icon">{game.emoji}</span>
+                    {game.label}
+                  </button>
+                ))}
+                <button className="menu-btn game-list-button game-list-cancel" onClick={() => setGameMenuOpen(false)}>
+                  Back
+                </button>
+              </div>
+            )}
           </div>
         )}
 
