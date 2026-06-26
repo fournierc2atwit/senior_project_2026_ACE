@@ -19,7 +19,7 @@ class Rules:
         if amount <= 0:
             raise ValueError("Bet amount must be greater than 0.")
 
-        if amount not in SlotRules.ALLOWED_BETS:
+        if amount not in Rules.ALLOWED_BETS:
             raise ValueError("Invalid slot bet amount.")
 
         if amount > chips:
@@ -30,7 +30,7 @@ class Rules:
         # Three matching symbols
         if reels[0] == reels[1] == reels[2]:
             symbol = reels[0]
-            multiplier = SlotRules.PAYOUTS[symbol]
+            multiplier = Rules.PAYOUTS[symbol]
             payout = amount * multiplier
 
             return {
@@ -67,7 +67,7 @@ class Rules:
     @staticmethod
     def resolve_spin(machine, amount):
         reels = machine.spin()
-        outcome = SlotRules.calculate_payout(reels, amount)
+        outcome = Rules.calculate_payout(reels, amount)
 
         return {
             "reels": reels,
