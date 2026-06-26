@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Menu from "./components/Menu";
-import Table from "./components/Table";
+import Table from "./components/blackjack/Table";
 import Stats from "./components/Stats";
 import Tutorial from "./components/Tutorial";
 

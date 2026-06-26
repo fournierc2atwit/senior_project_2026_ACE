@@ -66,6 +66,7 @@ export default function Table({ onNavigate, playerName, initialChips }) {
 
     // Round fully resolved (all hands done)
     if ("outcome" in res.data) {
+      if (res.data.player_hand) setPlayerHand(res.data.player_hand);
       if (res.data.dealer_hand) setDealerHand(res.data.dealer_hand);
       setOutcome(res.data.outcome);
       setMessage(res.data.message);

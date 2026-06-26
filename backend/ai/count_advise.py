@@ -1,5 +1,5 @@
-from ai.advise import Advisor
-from ai.counting import (
+from backend.ai.advise import Advisor
+from backend.ai.counting import (
     get_deviation,
     should_take_insurance,
     recommend_bet,

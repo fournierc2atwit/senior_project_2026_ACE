@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Hand from "./Hand";
-import Hud from "./Hud";
+import Hand from "./blackjack/Hand";
+import Hud from "./blackjack/Hud";
 import "./Tutorial.css";
 
 // ── Step definitions ───────────────────────────────────────────

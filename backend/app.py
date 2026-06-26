@@ -12,22 +12,25 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Use package-style imports (rely on PROJECT_ROOT being on sys.path)
-from game.blackjack.card import Card
-from game.blackjack.deck import Deck
-from game.blackjack.hand import Hand
-from game.blackjack.player import Player
-from game.blackjack.rules import Rules
-from game.roulette.wheel import Wheel
-from game.roulette.rules import Rules as RouletteRules
-from database.db import create_tables
-from database.stats import save_stats, get_player_stats, get_all_player_stats
+from backend.game.blackjack.card import Card
+from backend.game.blackjack.deck import Deck
+from backend.game.blackjack.hand import Hand
+from backend.game.blackjack.player import Player
+from backend.game.blackjack.rules import Rules
+from backend.game.roulette.wheel import Wheel
+from backend.game.roulette.rules import Rules as RouletteRules
+from backend.database.db import create_tables
+from backend.database.stats import save_stats, get_player_stats, get_all_player_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
 CORS(app, supports_credentials=True)
 
 # Create database tables on startup if they don't exist
-create_tables()
+try:
+    create_tables()
+except ValueError as exc:
+    print(f"Database unavailable; stats persistence disabled: {exc}")
 
 # Roulette wheel instance — stateless, created once at startup
 _wheel = Wheel()
@@ -297,6 +300,9 @@ def hit():
         summary = summarize_split_outcome(results)
         message = split_outcome_message(results)
         _persist_stats()
+        bankrupt = session.get("chips", 0) <= 0
+        if bankrupt:
+            message = f"{message} You went bankrupt!"
         clear_round()
 
         return jsonify({
@@ -307,6 +313,7 @@ def hit():
             "message":     message,
             "chips":       session.get("chips"),
             "bust":        True,
+            "bankrupt":    bankrupt,
         })
 
     persist_player_hands(player_hands, hand_bets, active_index, statuses)
@@ -356,6 +363,9 @@ def stand():
     summary = summarize_split_outcome(results)
     message = split_outcome_message(results)
     _persist_stats()
+    bankrupt = session.get("chips", 0) <= 0
+    if bankrupt:
+        message = f"{message} You went bankrupt!"
     clear_round()
 
     return jsonify({
@@ -364,6 +374,7 @@ def stand():
         "outcome":     summary,
         "message":     message,
         "chips":       session.get("chips"),
+        "bankrupt":    bankrupt,
     })
 
 
@@ -415,6 +426,9 @@ def double():
     summary = summarize_split_outcome(results)
     message = split_outcome_message(results)
     _persist_stats()
+    bankrupt = session.get("chips", 0) <= 0
+    if bankrupt:
+        message = f"{message} You went bankrupt!"
     clear_round()
 
     return jsonify({
@@ -424,6 +438,7 @@ def double():
         "outcome":     summary,
         "message":     message,
         "chips":       session.get("chips"),
+        "bankrupt":    bankrupt,
     })
 
 
@@ -468,10 +483,7 @@ def split():
     })
 
 
-try:
-    from ai.advise import Advisor
-except ImportError:
-    from backend.ai.advise import Advisor
+from backend.ai.advise import Advisor
 
 _advisor = Advisor()
 
@@ -675,7 +687,7 @@ def _persist_stats():
     bankrupts = session.get("bankrupts", 0)
     if chips <= 0:
         bankrupts += 1
-        chips = Player.STARTING_CHIPS
+        chips = 0
         session.update({"chips": chips, "bankrupts": bankrupts})
     save_stats(session.get("name", "Player"), chips, session.get("wins", 0), session.get("losses", 0), session.get("pushes", 0), bankrupts)
 
