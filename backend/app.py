@@ -19,6 +19,8 @@ from game.blackjack.player import Player
 from game.blackjack.rules import Rules
 from game.roulette.wheel import Wheel
 from game.roulette.rules import Rules as RouletteRules
+from game.slots.machine import SlotMachine
+from game.slots.rules import Rules as SlotRules
 from database.db import create_tables
 from database.stats import save_stats, get_player_stats, get_all_player_stats
 

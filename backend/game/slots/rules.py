@@ -1,4 +1,4 @@
-class SlotRules:
+class Rules:
     """
     Validates slot bets and calculates slot payouts.
     """
