@@ -48,7 +48,7 @@ const WHEEL_BACKGROUND = buildWheelGradient();
 
 const STRAIGHT_NUMBERS = [0, "00", ...Array.from({ length: 36 }, (_, i) => i + 1)];
 
-export default function RouletteTable({ onNavigate, playerName, initialChips }) {
+export default function RouletteTable({ onNavigate, playerName, initialChips, onSetChips }) {
   const [chips, setChips]       = useState(initialChips ?? 1000);
   const [amount, setAmount]     = useState(0);
   const [betType, setBetType]   = useState("color");
@@ -111,6 +111,11 @@ export default function RouletteTable({ onNavigate, playerName, initialChips }) 
       setTimeout(() => {
         setResult(res.data);
         setChips(res.data.chips);
+
+        if (onSetChips) {
+          onSetChips(res.data.chips);
+        }
+
         setSpinning(false);
         setLoading(false);
       }, 3000);

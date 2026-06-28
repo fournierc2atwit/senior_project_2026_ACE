@@ -43,6 +43,23 @@ def create_tables():
             biggest_win INTEGER NOT NULL DEFAULT 0
         );
     """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS roulette_stats (
+            id SERIAL PRIMARY KEY,
+            player_name TEXT NOT NULL UNIQUE,
+            spins INTEGER NOT NULL DEFAULT 0,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            total_wagered INTEGER NOT NULL DEFAULT 0,
+            total_payout INTEGER NOT NULL DEFAULT 0,
+            biggest_win INTEGER NOT NULL DEFAULT 0,
+            straight_bets INTEGER NOT NULL DEFAULT 0,
+            color_bets INTEGER NOT NULL DEFAULT 0,
+            parity_bets INTEGER NOT NULL DEFAULT 0,
+            dozen_bets INTEGER NOT NULL DEFAULT 0
+        );
+    """)
     
     conn.commit()
     cur.close()

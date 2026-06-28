@@ -3,6 +3,7 @@ from backend.database.db import get_connection
 _DB_AVAILABLE = True
 _IN_MEMORY_PLAYER_STATS = {}
 _IN_MEMORY_SLOTS_STATS = {}
+_IN_MEMORY_ROULETTE_STATS = {}
 
 try:
     conn = get_connection()
@@ -192,6 +193,125 @@ def get_slots_stats(player_name):
     cur.execute("""
         SELECT player_name, spins, wins, losses, total_wagered, total_payout, biggest_win
         FROM slots_stats
+        WHERE LOWER(player_name) = LOWER(%s);
+    """, (player_name,))
+
+    stats = cur.fetchone()
+
+    cur.close()
+    conn.close()
+
+    return stats
+
+
+def save_roulette_spin(player_name, bet_type, amount, total_return, payout, won):
+    player_name = _normalize_player_name(player_name)
+
+    roulette_win = 1 if won else 0
+    roulette_loss = 0 if won else 1
+
+    straight_bets = 1 if bet_type == "straight" else 0
+    color_bets = 1 if bet_type == "color" else 0
+    parity_bets = 1 if bet_type == "parity" else 0
+    dozen_bets = 1 if bet_type == "dozen" else 0
+
+    if not _DB_AVAILABLE:
+        current = _IN_MEMORY_ROULETTE_STATS.get(player_name, {
+            "player_name": player_name,
+            "spins": 0,
+            "wins": 0,
+            "losses": 0,
+            "total_wagered": 0,
+            "total_payout": 0,
+            "biggest_win": 0,
+            "straight_bets": 0,
+            "color_bets": 0,
+            "parity_bets": 0,
+            "dozen_bets": 0,
+        })
+
+        current["spins"] += 1
+        current["wins"] += roulette_win
+        current["losses"] += roulette_loss
+        current["total_wagered"] += amount
+        current["total_payout"] += total_return
+        current["biggest_win"] = max(current["biggest_win"], payout)
+        current["straight_bets"] += straight_bets
+        current["color_bets"] += color_bets
+        current["parity_bets"] += parity_bets
+        current["dozen_bets"] += dozen_bets
+
+        _IN_MEMORY_ROULETTE_STATS[player_name] = current
+        return
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO roulette_stats
+        (player_name, spins, wins, losses, total_wagered, total_payout,
+         biggest_win, straight_bets, color_bets, parity_bets, dozen_bets)
+        VALUES (%s, 1, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (player_name)
+        DO UPDATE SET
+            spins = roulette_stats.spins + 1,
+            wins = roulette_stats.wins + EXCLUDED.wins,
+            losses = roulette_stats.losses + EXCLUDED.losses,
+            total_wagered = roulette_stats.total_wagered + EXCLUDED.total_wagered,
+            total_payout = roulette_stats.total_payout + EXCLUDED.total_payout,
+            biggest_win = GREATEST(roulette_stats.biggest_win, EXCLUDED.biggest_win),
+            straight_bets = roulette_stats.straight_bets + EXCLUDED.straight_bets,
+            color_bets = roulette_stats.color_bets + EXCLUDED.color_bets,
+            parity_bets = roulette_stats.parity_bets + EXCLUDED.parity_bets,
+            dozen_bets = roulette_stats.dozen_bets + EXCLUDED.dozen_bets;
+    """, (
+        player_name,
+        roulette_win,
+        roulette_loss,
+        amount,
+        total_return,
+        payout,
+        straight_bets,
+        color_bets,
+        parity_bets,
+        dozen_bets,
+    ))
+
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+def get_roulette_stats(player_name):
+    player_name = _normalize_player_name(player_name)
+
+    if not _DB_AVAILABLE:
+        stats = _IN_MEMORY_ROULETTE_STATS.get(player_name)
+
+        if not stats:
+            return None
+
+        return (
+            stats["player_name"],
+            stats["spins"],
+            stats["wins"],
+            stats["losses"],
+            stats["total_wagered"],
+            stats["total_payout"],
+            stats["biggest_win"],
+            stats["straight_bets"],
+            stats["color_bets"],
+            stats["parity_bets"],
+            stats["dozen_bets"],
+        )
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT player_name, spins, wins, losses, total_wagered, total_payout,
+               biggest_win, straight_bets, color_bets, parity_bets, dozen_bets
+        FROM roulette_stats
         WHERE LOWER(player_name) = LOWER(%s);
     """, (player_name,))
 

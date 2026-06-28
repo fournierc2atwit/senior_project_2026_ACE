@@ -22,7 +22,7 @@ from game.roulette.rules import Rules as RouletteRules
 from game.slots.machine import SlotMachine
 from game.slots.rules import Rules as SlotRules
 from database.db import create_tables
-from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats
+from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -550,6 +550,15 @@ def roulette_spin():
     amount    = data.get("amount", 0)
     chips     = session.get("chips", Player.STARTING_CHIPS)
 
+
+    try:
+        amount = int(amount)
+
+        if bet_type in ("straight", "dozen") and bet_value != "00":
+            bet_value = int(bet_value)
+    except (TypeError, ValueError):
+        return jsonify({ "status": "error", "message": "Invalid bet amount or value." }), 400
+        
     if amount <= 0 or amount > chips:
         return jsonify({ "status": "error", "message": "Invalid bet amount." }), 400
 
@@ -567,14 +576,18 @@ def roulette_spin():
     new_chips = session["chips"] + result["total_return"]
     session["chips"] = new_chips
 
-    # Update win/loss counters (reusing the same session keys as Blackjack
-    # keeps stats tracking and the database save consistent across games)
-    if result["won"]:
-        session["wins"] = session.get("wins", 0) + 1
-    else:
-        session["losses"] = session.get("losses", 0) + 1
-
+    # Save updated chip count to regular player stats
     _persist_stats()
+    
+    # Save roulette-specific stats separately
+    save_roulette_spin(
+        session.get("name", "Player"),
+        bet_type,
+        amount,
+        result["total_return"],
+        result["payout"],
+        result["won"]
+    )
 
     return jsonify({
         "status":       "success",
@@ -588,6 +601,65 @@ def roulette_spin():
         "total_return": result["total_return"],
         "chips":        new_chips,
     })
+
+@app.route("/api/roulette/stats", methods=["GET"])
+def roulette_stats():
+    """Return roulette-specific stats for the current player."""
+    name = session.get("name", "Player")
+
+    saved = get_roulette_stats(name)
+
+    if saved:
+        (
+            player_name,
+            spins,
+            wins,
+            losses,
+            total_wagered,
+            total_payout,
+            biggest_win,
+            straight_bets,
+            color_bets,
+            parity_bets,
+            dozen_bets,
+        ) = saved
+    else:
+        player_name = name
+        spins = 0
+        wins = 0
+        losses = 0
+        total_wagered = 0
+        total_payout = 0
+        biggest_win = 0
+        straight_bets = 0
+        color_bets = 0
+        parity_bets = 0
+        dozen_bets = 0
+
+    if spins > 0:
+        win_percentage = round((wins / spins) * 100, 2)
+    else:
+        win_percentage = 0
+
+    net_profit = total_payout - total_wagered
+
+    return jsonify({
+        "status": "success",
+        "player_name": player_name,
+        "spins": spins,
+        "wins": wins,
+        "losses": losses,
+        "total_wagered": total_wagered,
+        "total_payout": total_payout,
+        "biggest_win": biggest_win,
+        "net_profit": net_profit,
+        "win_percentage": win_percentage,
+        "straight_bets": straight_bets,
+        "color_bets": color_bets,
+        "parity_bets": parity_bets,
+        "dozen_bets": dozen_bets,
+    })
+
 
 # ------------------------------------------------------------------
 # Routes — Slots
