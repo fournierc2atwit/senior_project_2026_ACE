@@ -22,7 +22,7 @@ from game.roulette.rules import Rules as RouletteRules
 from game.slots.machine import SlotMachine
 from game.slots.rules import Rules as SlotRules
 from database.db import create_tables
-from database.stats import save_stats, get_player_stats, get_all_player_stats
+from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -639,14 +639,17 @@ def slots_spin():
     new_chips = session["chips"] + result["total_return"]
     session["chips"] = new_chips
 
-    # Update win/loss stats
-    if result["won"]:
-        session["wins"] = session.get("wins", 0) + 1
-    else:
-        session["losses"] = session.get("losses", 0) + 1
-
     # Save updated chips/stats to database
     _persist_stats()
+    
+    # Save slots-specific stats separately
+    save_slot_spin(
+        session.get("name", "Player"),
+        amount,
+        result["total_return"],
+        result["payout"],
+        result["won"]
+    )
 
     return jsonify({
         "status": "success",
@@ -660,6 +663,44 @@ def slots_spin():
         "total_return": result["total_return"],
         "chips": new_chips,
         "message": result["message"],
+    })
+
+@app.route("/api/slots/stats", methods=["GET"])
+def slots_stats():
+    """Return slots-specific stats for the current player."""
+    name = session.get("name", "Player")
+
+    saved = get_slots_stats(name)
+
+    if saved:
+        player_name, spins, wins, losses, total_wagered, total_payout, biggest_win = saved
+    else:
+        player_name = name
+        spins = 0
+        wins = 0
+        losses = 0
+        total_wagered = 0
+        total_payout = 0
+        biggest_win = 0
+
+    if spins > 0:
+        win_percentage = round((wins / spins) * 100, 2)
+    else:
+        win_percentage = 0
+
+    net_profit = total_payout - total_wagered
+
+    return jsonify({
+        "status": "success",
+        "player_name": player_name,
+        "spins": spins,
+        "wins": wins,
+        "losses": losses,
+        "total_wagered": total_wagered,
+        "total_payout": total_payout,
+        "biggest_win": biggest_win,
+        "net_profit": net_profit,
+        "win_percentage": win_percentage,
     })
 
 # ------------------------------------------------------------------
