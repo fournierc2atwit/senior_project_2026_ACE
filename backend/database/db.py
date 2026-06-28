@@ -31,6 +31,19 @@ def create_tables():
         );
     """)
 
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS slots_stats (
+            id SERIAL PRIMARY KEY,
+            player_name TEXT NOT NULL UNIQUE,
+            spins INTEGER NOT NULL DEFAULT 0,
+            wins INTEGER NOT NULL DEFAULT 0,
+            losses INTEGER NOT NULL DEFAULT 0,
+            total_wagered INTEGER NOT NULL DEFAULT 0,
+            total_payout INTEGER NOT NULL DEFAULT 0,
+            biggest_win INTEGER NOT NULL DEFAULT 0
+        );
+    """)
+    
     conn.commit()
     cur.close()
     conn.close()
