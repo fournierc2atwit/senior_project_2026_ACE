@@ -336,13 +336,17 @@
 }
 
 .game-list-button {
-  justify-content: flex-start;
-  background: rgba(255,255,255,0.08);
+  justify-content: center;
+  text-align: center;
+  background: rgba(255,255,255,0.06);
+  border-color: #e2c97e;
+  color: var(--cream);
 }
 
 .game-list-button.selected {
-  background: rgba(201,168,76,0.18);
-  border-color: var(--gold);
+  background: rgba(255,255,255,0.06);
+  border-color: #e2c97e;
+  color: var(--cream);
 }
 
 .game-list-cancel {
