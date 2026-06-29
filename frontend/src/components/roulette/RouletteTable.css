@@ -76,20 +76,20 @@
 
 .rt-pointer {
   position: absolute;
-  top: calc(50% - 145px);
+  top: calc(50% - 180px);
   width: 0;
   height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 16px solid var(--gold);
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 20px solid var(--gold);
   z-index: 3;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .rt-wheel {
   position: relative;
-  width: 260px;
-  height: 260px;
+  width: 340px;
+  height: 340px;
   border-radius: 50%;
   border: 6px solid var(--gold-dark);
   box-shadow:
@@ -102,13 +102,13 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px;
+  width: 32px;
+  height: 32px;
+  margin: -16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.6rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #f0e6cc;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
