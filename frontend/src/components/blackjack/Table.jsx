@@ -1,18 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import Hand from "./Hand";
 import Hud from "./Hud";
 import "./Table.css";
 
-const CHIP_AMOUNTS = [10, 25, 50, 100];
+const CHIP_AMOUNTS = [
+  { value: 10,  img: "/chips/chip-10.png" },
+  { value: 25,  img: "/chips/chip-25.png" },
+  { value: 50,  img: "/chips/chip-50.png" },
+  { value: 100, img: "/chips/chip-100.png" },
+];
 
-export default function Table({ onNavigate, playerName, initialChips }) {
+export default function Table({ onNavigate, onSetChips, playerName, initialChips }) {
   const [phase, setPhase]                 = useState("betting");
   const [playerHand, setPlayerHand]       = useState(null);
   const [dealerHand, setDealerHand]       = useState(null);
   const [chips, setChips]                 = useState(initialChips ?? 1000);
   const [bet, setBet]                     = useState(0);
   const [outcome, setOutcome]             = useState(null);
+
+  useEffect(() => {
+    if (onSetChips) {
+      onSetChips(chips);
+    }
+  }, [chips, onSetChips]);
   const [message, setMessage]             = useState("");
   const [hint, setHint]                   = useState(null);
   const [error, setError]                 = useState("");
@@ -260,9 +271,14 @@ export default function Table({ onNavigate, playerName, initialChips }) {
           ) : (
             <div className="controls-betting">
               <div className="chip-row">
-                {CHIP_AMOUNTS.map((amt) => (
-                  <button key={amt} className="chip-btn" onClick={() => addChips(amt)}>
-                    +${amt}
+                {CHIP_AMOUNTS.map(({ value, img }) => (
+                  <button
+                    key={value}
+                    className="chip-btn"
+                    onClick={() => addChips(value)}
+                    aria-label={`Bet $${value}`}
+                  >
+                    <img src={img} alt="chip" className="chip-img" />
                   </button>
                 ))}
               </div>

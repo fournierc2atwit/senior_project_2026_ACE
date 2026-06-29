@@ -12,15 +12,15 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 # Use package-style imports (rely on PROJECT_ROOT being on sys.path)
-from game.blackjack.card import Card
-from game.blackjack.deck import Deck
-from game.blackjack.hand import Hand
-from game.blackjack.player import Player
-from game.blackjack.rules import Rules
-from game.roulette.wheel import Wheel
-from game.roulette.rules import Rules as RouletteRules
-from game.slots.machine import SlotMachine
-from game.slots.rules import Rules as SlotRules
+from backend.game.blackjack.card import Card
+from backend.game.blackjack.deck import Deck
+from backend.game.blackjack.hand import Hand
+from backend.game.blackjack.player import Player
+from backend.game.blackjack.rules import Rules
+from backend.game.roulette.wheel import Wheel
+from backend.game.roulette.rules import Rules as RouletteRules
+from backend.game.slots.machine import SlotMachine
+from backend.game.slots.rules import Rules as SlotRules
 from database.db import create_tables
 from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats
 
@@ -194,7 +194,7 @@ def new_game():
     Accepts an optional player name to load saved stats from the database.
     Body: { "name": "Colby" }  (optional)
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     name = data.get("name", "Player")
     name = name.strip().lower()
 

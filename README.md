@@ -1,23 +1,30 @@
 # A.C.E. — AI Casino Education
 
-A.C.E. is an AI-assisted Blackjack training project designed to help players learn strategy, understand odds, and improve decision-making in a low-risk, interactive environment. The project currently combines a Flask backend for gameplay and stats, a React frontend for the user interface, and supporting assets for the card-based experience.
+A.C.E. is an interactive casino-learning application that combines a Flask backend with a React frontend to teach and practice casino games in a guided environment. The current experience includes a main menu, player name setup, a game-selection flow, and playable interfaces for blackjack, roulette, and slots.
 
 ## Overview
 
 This repository contains the full application stack for the A.C.E. project:
-- Python/Flask backend for the game engine, API routes, and player statistics
-- React frontend for the visual Blackjack table, controls, HUD, and tutorial views
-- Local assets and documentation for the game experience and project planning
+- A Python/Flask backend for game logic, API routes, session handling, and stats persistence
+- A React frontend for the menu, tutorial, stats, and game screens
+- Supporting assets and documentation for the project
+
+## Current Behavior
+
+The app currently provides:
+- A start screen that asks for the player's name and initializes a new session
+- A post-login menu with buttons for Play, Tutorial, Stats, and Quit
+- A game-selection submenu that lets players choose Blackjack, Roulette, or Slots
+- A blackjack table with deal/hit/stand/double actions and chip tracking
+- A roulette table with betting controls, wheel spin animation, and result feedback
+- A slots table screen for the current slots experience
+- Persistent player stats through the backend database layer
 
 ## Team
 
-- Colby Fournier — Game Logic Developer and UI Designer
-- Cisco Harbeck — Game Logic Developer and Backend/Database Lead
-- Reymond Sanchez — Game Logic Developer and AI Systems Lead
-
-## Current Status
-
-The project is under active development. The backend provides the core game loop and API endpoints, while the frontend is being used to present the game experience to the player.
+- Colby Fournier — Frontend UI and experience design
+- Cisco Harbeck — Backend and database work
+- Reymond Sanchez — Game logic and AI systems
 
 ## Requirements
 
@@ -27,7 +34,7 @@ The project is under active development. The backend provides the core game loop
 
 ## Setup
 
-1. Clone the project
+1. Clone the repository
    ```bash
    git clone https://github.com/fournierc2atwit/senior_project_2026_ACE
    cd senior_project_2026_ACE
@@ -69,79 +76,49 @@ cd frontend
 npm start
 ```
 
-The frontend is typically available at http://localhost:3000, while the Flask API runs on the backend server.
+The frontend is typically served at http://localhost:3000, and the Flask API runs on http://127.0.0.1:5000.
 
 ## Project Structure
 
 ```text
 senior_project_2026_ACE/
-├── .git/                          # Git metadata
-├── .gitignore
-├── .vscode/                       # VS Code workspace settings
 ├── assets/
 │   └── cards/
 │       └── fonts/
 │           └── sounds/
-│               └── images/        # Empty asset folder for future art/audio files
+│               └── images/
 ├── backend/
-│   ├── .env                       # Local environment variables
-│   ├── __init__.py
-│   ├── app.py                     # Flask app and API routes
-│   ├── requirements.txt           # Python dependencies
-│   ├── test_app.py                # Backend API tests
+│   ├── app.py
+│   ├── requirements.txt
+│   ├── test_app.py
 │   ├── ai/
-│   │   ├── __init__.py
 │   │   ├── advise.py
 │   │   ├── counting.py
 │   │   ├── count_advise.py
 │   │   └── strategy.py
 │   ├── database/
-│   │   ├── __init__.py
 │   │   ├── db.py
 │   │   ├── stats.py
 │   │   ├── test_db.py
 │   │   └── test_stats.py
 │   └── game/
-│       ├── __init__.py
-│       ├── card.py
-│       ├── deck.py
-│       ├── hand.py
-│       ├── player.py
-│       └── rules.py
+│       ├── blackjack/
+│       ├── roulette/
+│       └── slots/
 ├── docs/
-│   ├── 5_10 Project Proposal.pdf
-│   ├── Design Doc.pdf
-│   └── Project Plan.pdf
 ├── frontend/
-│   ├── .gitignore
-│   ├── package-lock.json
-│   ├── package.json               # React app dependencies and scripts
-│   ├── README.md
+│   ├── package.json
 │   ├── public/
-│   │   ├── index.html
-│   │   ├── manifest.json
-│   │   ├── robots.txt
-│   │   └── ...
 │   └── src/
-│       ├── App.css
 │       ├── App.js
-│       ├── index.css
-│       ├── index.js
 │       └── components/
-│           ├── Card.jsx
-│           ├── Hand.css
-│           ├── Hand.jsx
-│           ├── Hud.css
-│           ├── Hud.jsx
-│           ├── Menu.css
+│           ├── blackjack/
+│           ├── roulette/
+│           ├── slots/
 │           ├── Menu.jsx
-│           ├── Stats.css
 │           ├── Stats.jsx
-│           ├── Table.css
-│           ├── Table.jsx
-│           └── Tutorial.css
-│           └── Tutorial.jsx
-├── venv/                           # Python virtual environment
+│           ├── Tutorial.jsx
+│           └── related CSS files
 └── README.md
 ```
 
@@ -149,16 +126,18 @@ senior_project_2026_ACE/
 
 ### Gameplay
 - Blackjack round flow with deal, hit, stand, and double-down actions
-- Dealer logic and winner determination
-- Player chip/bankroll management
+- Roulette wheel spins with bet placement and result feedback
+- Slots experience screen with current game flow and stats hooks
+- Player chip/bankroll handling across sessions
 
 ### Learning Support
-- Strategy hints and educational feedback during play
-- Session-based and saved player statistics
+- Tutorial and stats navigation from the main menu
+- Session-based and saved player statistics through the backend database
+- Educational UI flow for moving between menu, game, and reference screens
 
 ### User Experience
-- Web-based interface for gameplay and interaction
-- Menu, tutorial, and HUD components for player guidance
+- Menu-driven navigation for game selection and screen transitions
+- Responsive React-based interface for the current casino experience
 
 ## Technology Stack
 
@@ -167,20 +146,21 @@ senior_project_2026_ACE/
 | Backend | Python, Flask |
 | API | Flask-CORS, JSON endpoints |
 | Database | SQLite-based persistence |
-| Frontend | React, Create React App |
+| Frontend | React, Create React App-style React app |
 | Package Management | pip, npm |
 
 ## Testing
 
-The backend includes test files for application and database behavior. To run the test suite:
+The backend includes tests for app and database behavior. To run the suite:
 
 ```bash
+cd backend
 python -m pytest
 ```
 
 ## Contributing
 
-Contributions are welcome. Please coordinate with the team members listed above and keep the backend/frontend separation consistent while making changes.
+Contributions are welcome. Please keep the backend/frontend separation intact and coordinate with the team before changing game logic or navigation behavior.
 
 ## License
 

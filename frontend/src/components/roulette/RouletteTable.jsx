@@ -13,7 +13,12 @@ const RED_NUMBERS = new Set([
   1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36,
 ]);
 
-const CHIP_AMOUNTS = [10, 25, 50, 100];
+const CHIP_AMOUNTS = [
+  { value: 10,  img: "/chips/chip-10.png" },
+  { value: 25,  img: "/chips/chip-25.png" },
+  { value: 50,  img: "/chips/chip-50.png" },
+  { value: 100, img: "/chips/chip-100.png" },
+];
 const SLICE_ANGLE   = 360 / WHEEL_ORDER.length;
 const RADIUS_PX      = 118;
 const EXTRA_SPINS     = 6;
@@ -52,7 +57,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   const [chips, setChips]       = useState(initialChips ?? 1000);
   const [amount, setAmount]     = useState(0);
   const [betType, setBetType]   = useState("color");
-  const [betValue, setBetValue] = useState(null);
+  const [betValue, setBetValue] = useState("red");
 
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
@@ -287,14 +292,15 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         </div>
 
         <div className="rt-chip-row">
-          {CHIP_AMOUNTS.map((amt) => (
+          {CHIP_AMOUNTS.map(({ value, img }) => (
             <button
-              key={amt}
+              key={value}
               className="chip-btn"
-              onClick={() => addChips(amt)}
+              onClick={() => addChips(value)}
               disabled={spinning}
+              aria-label={`Bet $${value}`}
             >
-              +${amt}
+              <img src={img} alt="chip" className="chip-img" />
             </button>
           ))}
         </div>
