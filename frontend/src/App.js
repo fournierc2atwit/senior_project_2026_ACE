@@ -49,8 +49,13 @@ export default function App() {
         />
       )}
       {screen === "game" && selectedGame === "slots" && (
-        <SlotsTable onNavigate={navigate} playerName={playerName} initialChips={playerChips} />
-      )}
+  <SlotsTable
+    onNavigate={navigate}
+    playerName={playerName}
+    initialChips={playerChips}
+    onSetChips={setPlayerChips}
+  />
+)}
       {screen === "stats"    && <Stats    onNavigate={navigate} playerName={playerName} />}
       {screen === "tutorial" && <Tutorial onNavigate={navigate} />}
     </div>
