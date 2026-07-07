@@ -1,0 +1,57 @@
+.app-shell {
+  height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #0f2b1d 0%, #1a4d2e 45%, #123622 100%);
+  color: #f0e6cc;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-music-toggle {
+  position: fixed;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 999px;
+  background: rgba(8, 22, 13, 0.72);
+  color: #f0e6cc;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+  opacity: 0.9;
+}
+
+.app-music-toggle:hover {
+  transform: translateY(-1px);
+  background: rgba(12, 31, 18, 0.88);
+}
+
+.app-music-toggle:focus,
+.app-music-toggle:focus-visible,
+.app-music-toggle:active {
+  border: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+.app-music-toggle.is-on {
+  background: rgba(201, 168, 76, 0.18);
+}
+
+.music-icon {
+  font-size: 0.95rem;
+}

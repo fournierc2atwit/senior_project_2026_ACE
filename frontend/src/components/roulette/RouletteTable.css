@@ -290,13 +290,21 @@
   height: 64px;
   padding: 0;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  transition: background 0.2s, transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  will-change: transform, box-shadow;
 }
 .chip-btn:hover:not(:disabled) {
   background: rgba(201,168,76,0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  transform: translateY(-4px) scale(1.05) rotate(-2deg);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.35), 0 0 14px rgba(201,168,76,0.24);
+}
+.chip-btn:active:not(:disabled) {
+  transform: scale(0.97) translateY(-1px);
+}
+.chip-btn:hover:not(:disabled) .chip-img {
+  transform: scale(1.06);
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.28));
 }
 
 .chip-img {
@@ -304,6 +312,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 50%;
+  transition: transform 0.2s ease, filter 0.2s ease;
 }
 
 .rt-action-row {
