@@ -39,9 +39,9 @@ function CardFace({ label, index, isNewlyRevealed }) {
   );
 }
 
-export default function Hand({ cards, total, bust }) {
+export default function Hand({ cards, total, bust, showTotal = true }) {
   const prevCards = useRef([]);
-  const showTotal = total && total !== "?";
+  const shouldShowTotal = showTotal && total && total !== "?";
 
   // Detect which card was just revealed (was "?" now is a real card)
   const revealedIndex = prevCards.current.findIndex(
@@ -66,7 +66,7 @@ export default function Hand({ cards, total, bust }) {
           />
         ))}
       </div>
-      {showTotal && (
+      {shouldShowTotal && (
         <div className="hand-total">
           Total: <strong>{total}</strong>
         </div>

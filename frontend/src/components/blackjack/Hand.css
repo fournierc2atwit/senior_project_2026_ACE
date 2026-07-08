@@ -4,12 +4,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.6rem;
+  gap: 2.5rem;
 }
 
 .hand-cards {
   display: flex;
-  gap: 0.6rem;
+  gap: 2.25rem;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -17,9 +17,9 @@
 /* ── Card base ───────────────────────────────────────────────── */
 .card {
   position: relative;
-  width: 72px;
-  height: 100px;
-  border-radius: 8px;
+  width: 84px;
+  height: 120px;
+  border-radius: 10px;
   box-shadow:
     0 4px 12px rgba(0,0,0,0.5),
     0 1px 3px rgba(0,0,0,0.3),
@@ -54,6 +54,9 @@
   height: calc(100% - 10px);
   border-radius: 5px;
   border: 1px solid rgba(255,255,255,0.15);
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  border-radius: 6px;
   background:
     repeating-linear-gradient(
       45deg,
@@ -78,35 +81,35 @@
   flex-direction: column;
   align-items: center;
   line-height: 1;
-  gap: 1px;
+  gap: 3px;
 }
 
 .card-corner-tl {
-  top: 5px;
-  left: 6px;
+  top: 12px;
+  left: 14px;
 }
 
 .card-corner-br {
-  bottom: 5px;
-  right: 6px;
+  bottom: 12px;
+  right: 14px;
   transform: rotate(180deg);
 }
 
 .card-rank {
   font-family: 'Playfair Display', serif;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   line-height: 1;
 }
 
 .card-suit-sm {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   line-height: 1;
 }
 
 /* ── Center suit ─────────────────────────────────────────────── */
 .card-center-suit {
-  font-size: 1.8rem;
+  font-size: 2rem;
   line-height: 1;
   opacity: 0.85;
 }
@@ -114,9 +117,10 @@
 /* ── Total ───────────────────────────────────────────────────── */
 .hand-total {
   font-family: 'Crimson Pro', Georgia, serif;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
   color: rgba(200,185,138,0.7);
   letter-spacing: 0.05em;
+  margin-top: 1rem;
 }
 
 .hand-total strong {
@@ -127,7 +131,7 @@
 @keyframes cardDeal {
   from {
     opacity: 0;
-    transform: translateY(-40px) scale(0.85);
+    transform: translateY(-50px) scale(0.88);
   }
   to {
     opacity: 1;

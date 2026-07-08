@@ -75,24 +75,24 @@
 }
 
 /* ── Zones ─────────────────────────────────────────────────────── */
-.table-dealer-zone,
-.table-player-zone {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1.5rem 1rem 0.5rem;
-  flex: 1;
-}
-
 .zone-label {
-  font-size: 0.75rem;
-  letter-spacing: 0.3em;
+  font-size: 1.05rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
+}
+
+/* Modifier when label should appear below the hand */
+.zone-label-below {
+  margin-top: 0.6rem;
+  margin-bottom: 0;
+}
+
+/* Nudge dealer label slightly downward so it sits closer to the dealer's cards */
+.table-dealer-zone .zone-label {
+  margin-bottom: 0.5rem;
 }
 
 .hand-indicator {
@@ -112,13 +112,13 @@
 /* ── Idle card placeholders ────────────────────────────────────── */
 .zone-idle {
   display: flex;
-  gap: 0.6rem;
-  margin-top: 1rem;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .idle-card {
-  width: 72px;
-  height: 100px;
+  width: 84px;
+  height: 120px;
   border: 1px dashed rgba(201,168,76,0.25);
   border-radius: 8px;
   animation: idlePulse 3s ease-in-out infinite;
@@ -134,12 +134,90 @@
 }
 
 /* ── Center divider ────────────────────────────────────────────── */
-.table-divider {
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(201,168,76,0.3), transparent);
-  margin: 0 auto;
-  flex-shrink: 0;
+.table-divider { display: none; }
+
+/* ── Centered play area ────────────────────────────────────────── */
+.table-play-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem; /* moderate gap between dealer and player */
+  padding: 2rem 0 4rem 0; /* extra bottom padding to keep banners clear of labels */
+  min-height: 420px; /* moderate vertical room */
+  position: relative; /* for decorative outline */
+}
+
+.table-dealer-zone,
+.table-player-zone {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 1rem 0.5rem;
+  flex: 0 0 auto;
+}
+
+/* Slight inward offset so the two zones' cards sit nearer the vertical center */
+.table-dealer-zone { transform: translateY(55px); }
+.table-player-zone { transform: translateY(15px); }
+
+/* extra explicit margins in case transforms collapse on small viewports */
+.table-dealer-zone { margin-bottom: 1.25rem; }
+.table-player-zone { margin-top: 0.6rem; }
+
+/* Lower dealer's cards (but keep the label position) */
+.table-dealer-zone > .hand-root,
+.table-dealer-zone > .zone-idle {
+  margin-top: 1rem;
+}
+
+/* Raise dealer's total text a bit so it sits closer to the cards */
+.table-dealer-zone .hand-total {
+  margin-top: 0rem;
+}
+
+/* Dealer-specific total when shown above the label */
+.dealer-total {
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: rgba(200,185,138,0.95);
+  letter-spacing: 0.04em;
+  margin: 0.15rem 0 0 0;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .dealer-total { font-size: 0.95rem; margin-top: 0.25rem; }
+}
+
+/* Decorative subtle oval table outline centered behind the cards */
+.table-play-area::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 94%;
+  height: 72%;
+  border-radius: 46%;
+  border: 3px solid rgba(201,168,76,0.16);
+  box-shadow: inset 0 22px 72px rgba(0,0,0,0.34), 0 2px 0 rgba(255,255,255,0.04);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Make the oval slightly smaller on narrow screens so it doesn't overwhelm layout */
+@media (max-width: 720px) {
+  .table-play-area::before {
+    width: 96%;
+    height: 64%;
+    border-width: 2px;
+  }
+  .table-play-area { padding-bottom: 3rem; }
 }
 
 /* ── Hint banner ───────────────────────────────────────────────── */

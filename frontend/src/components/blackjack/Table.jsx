@@ -12,28 +12,24 @@ const CHIP_AMOUNTS = [
 ];
 
 export default function Table({ onNavigate, onSetChips, playerName, initialChips }) {
-  const [phase, setPhase]                 = useState("betting");
-  const [playerHand, setPlayerHand]       = useState(null);
-  const [dealerHand, setDealerHand]       = useState(null);
-  const [chips, setChips]                 = useState(initialChips ?? 1000);
-  const [bet, setBet]                     = useState(0);
-  const [outcome, setOutcome]             = useState(null);
+  const [phase, setPhase]                     = useState("betting");
+  const [playerHand, setPlayerHand]           = useState(null);
+  const [dealerHand, setDealerHand]           = useState(null);
+  const [chips, setChips]                     = useState(initialChips ?? 1000);
+  const [bet, setBet]                         = useState(0);
+  const [outcome, setOutcome]                 = useState(null);
+  const [message, setMessage]                 = useState("");
+  const [hint, setHint]                       = useState(null);
+  const [error, setError]                     = useState("");
+  const [loading, setLoading]                 = useState(false);
+  const [handCount, setHandCount]             = useState(1);
+  const [activeHandIndex, setActiveHandIndex] = useState(0);
+  const [canSplit, setCanSplit]               = useState(false);
+  const [handNote, setHandNote]               = useState("");
 
   useEffect(() => {
-    if (onSetChips) {
-      onSetChips(chips);
-    }
+    if (onSetChips) onSetChips(chips);
   }, [chips, onSetChips]);
-  const [message, setMessage]             = useState("");
-  const [hint, setHint]                   = useState(null);
-  const [error, setError]                 = useState("");
-  const [loading, setLoading]             = useState(false);
-
-  // ── Split-related state ──────────────────────────────────────
-  const [handCount, setHandCount]         = useState(1);
-  const [activeHandIndex, setActiveHandIndex] = useState(0);
-  const [canSplit, setCanSplit]           = useState(false);
-  const [handNote, setHandNote]           = useState("");
 
   const clearError = () => setError("");
 
@@ -71,11 +67,9 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     } catch { setHint(null); }
   };
 
-  // ── Shared handler for hit / stand / double responses ─────────
   const processActionResponse = (res) => {
     setChips(res.data.chips);
 
-    // Round fully resolved (all hands done)
     if ("outcome" in res.data) {
       if (res.data.player_hand) setPlayerHand(res.data.player_hand);
       if (res.data.dealer_hand) setDealerHand(res.data.dealer_hand);
@@ -87,9 +81,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       return;
     }
 
-    // Still playing — either same hand continues or moved to next hand
     const movedToNextHand = res.data.active_hand_index !== activeHandIndex;
-
     setPlayerHand(res.data.player_hand);
     setHandCount(res.data.hand_count ?? handCount);
     setActiveHandIndex(res.data.active_hand_index ?? activeHandIndex);
@@ -104,32 +96,9 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     fetchHint();
   };
 
-  const handleHit = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.post("/api/hit");
-      processActionResponse(res);
-    } catch { setError("Failed to hit. Try again."); }
-    setLoading(false);
-  };
-
-  const handleStand = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.post("/api/stand");
-      processActionResponse(res);
-    } catch { setError("Failed to stand. Try again."); }
-    setLoading(false);
-  };
-
-  const handleDouble = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.post("/api/double");
-      processActionResponse(res);
-    } catch { setError("Not enough chips to double down."); }
-    setLoading(false);
-  };
+  const handleHit    = async () => { setLoading(true); try { const res = await axios.post("/api/hit");    processActionResponse(res); } catch { setError("Failed to hit. Try again."); }    setLoading(false); };
+  const handleStand  = async () => { setLoading(true); try { const res = await axios.post("/api/stand");  processActionResponse(res); } catch { setError("Failed to stand. Try again."); }  setLoading(false); };
+  const handleDouble = async () => { setLoading(true); try { const res = await axios.post("/api/double"); processActionResponse(res); } catch { setError("Not enough chips to double down."); } setLoading(false); };
 
   const handleSplit = async () => {
     setLoading(true);
@@ -190,11 +159,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const isBroke = chips === 0;
 
   const handleMenu = async () => {
-    try {
-      await axios.post("/api/save");
-    } catch (err) {
-      console.error("Failed to save before menu", err);
-    }
+    try { await axios.post("/api/save"); } catch (err) { console.error("Failed to save before menu", err); }
     onNavigate("menu");
   };
 
@@ -206,43 +171,40 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={handleMenu}>
-        ← Menu
-      </button>
-
-      <div className="table-dealer-zone">
-        <p className="zone-label">DEALER</p>
-        {dealerHand
-          ? <Hand cards={dealerHand.cards} total={dealerHand.total} />
-          : (
-            <div className="zone-idle">
-              <div className="idle-card" />
-              <div className="idle-card" />
-            </div>
-          )}
-      </div>
-
-      <div className="table-divider" />
-
-      <div className="table-player-zone">
-        <p className="zone-label">
-          YOUR HAND
-          {handCount > 1 && (
-            <span className="hand-indicator"> — Hand {activeHandIndex + 1} of {handCount}</span>
-          )}
-        </p>
-        {playerHand
-          ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
-          : (
-            <div className="zone-idle">
-              <div className="idle-card" />
-              <div className="idle-card" />
-            </div>
-          )}
-      </div>
+      <button className="table-menu-btn" onClick={handleMenu}>← Menu</button>
 
       <Hud chips={chips} bet={bet} />
 
+      {/* ── Centered play area ── */}
+      <div className="table-play-area">
+
+        <div className="table-dealer-zone">
+          {dealerHand && dealerHand.total && dealerHand.total !== "?" && (
+            <div className="hand-total dealer-total">Total: <strong>{dealerHand.total}</strong></div>
+          )}
+          <p className="zone-label">DEALER</p>
+          {dealerHand
+            ? <Hand cards={dealerHand.cards} total={dealerHand.total} showTotal={false} />
+            : <div className="zone-idle"><div className="idle-card" /><div className="idle-card" /></div>}
+        </div>
+
+        <div className="table-divider" />
+
+        <div className="table-player-zone">
+          {playerHand
+            ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
+            : <div className="zone-idle"><div className="idle-card" /><div className="idle-card" /></div>}
+          <p className="zone-label zone-label-below">
+            YOUR HAND
+            {handCount > 1 && (
+              <span className="hand-indicator"> — Hand {activeHandIndex + 1} of {handCount}</span>
+            )}
+          </p>
+        </div>
+
+      </div>
+
+      {/* ── Banners sit between play area and controls ── */}
       {handNote && phase === "playing" && (
         <div className="hand-note-banner">{handNote}</div>
       )}
@@ -258,26 +220,20 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
 
       {error && <div className="error-banner">{error}</div>}
 
+      {/* ── Controls ── */}
       <div className="table-controls">
 
         {phase === "betting" && (
           isBroke ? (
             <div className="controls-result">
               <div className="result-message result-lose">You went bankrupt!</div>
-              <button className="btn-next" onClick={handleReset}>
-                Start Over
-              </button>
+              <button className="btn-next" onClick={handleReset}>Start Over</button>
             </div>
           ) : (
             <div className="controls-betting">
               <div className="chip-row">
                 {CHIP_AMOUNTS.map(({ value, img }) => (
-                  <button
-                    key={value}
-                    className="chip-btn"
-                    onClick={() => addChips(value)}
-                    aria-label={`Bet $${value}`}
-                  >
+                  <button key={value} className="chip-btn" onClick={() => addChips(value)} aria-label={`Bet $${value}`}>
                     <img src={img} alt="chip" className="chip-img" />
                   </button>
                 ))}
