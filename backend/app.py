@@ -22,7 +22,7 @@ from backend.game.roulette.rules import Rules as RouletteRules
 from backend.game.slots.machine import SlotMachine
 from backend.game.slots.rules import Rules as SlotRules
 from database.db import create_tables
-from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats
+from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats,  get_all_slots_stats
 
 app = Flask(__name__)
 app.secret_key = "ace-dev-secret-key"
@@ -781,51 +781,183 @@ def slots_stats():
 
 @app.route("/api/stats", methods=["GET"])
 def stats():
-    """Return the current player's session and all-time stats from the database."""
+    """Return shared, Blackjack, Slots, and Roulette stats for the current player."""
     name = session.get("name", "Player")
 
-    # Session stats
-    session_stats = {
-        "chips":  session.get("chips", Player.STARTING_CHIPS),
-        "wins":   session.get("wins", 0),
-        "losses": session.get("losses", 0),
-        "pushes": session.get("pushes", 0),
+    player_saved = get_player_stats(name)
+    slots_saved = get_slots_stats(name)
+    roulette_saved = get_roulette_stats(name)
+
+    # Shared chip balance and Blackjack stats
+    if player_saved:
+        (
+            player_name,
+            chips,
+            blackjack_wins,
+            blackjack_losses,
+            blackjack_pushes,
+            blackjack_games,
+            bankrupts,
+        ) = player_saved
+    else:
+        player_name = name
+        chips = session.get("chips", Player.STARTING_CHIPS)
+        blackjack_wins = 0
+        blackjack_losses = 0
+        blackjack_pushes = 0
+        blackjack_games = 0
+        bankrupts = 0
+
+    if blackjack_games > 0:
+        blackjack_win_percentage = round(
+            (blackjack_wins / blackjack_games) * 100, 2
+        )
+        blackjack_loss_percentage = round(
+            (blackjack_losses / blackjack_games) * 100, 2
+        )
+        blackjack_push_percentage = round(
+            (blackjack_pushes / blackjack_games) * 100, 2
+        )
+    else:
+        blackjack_win_percentage = 0
+        blackjack_loss_percentage = 0
+        blackjack_push_percentage = 0
+
+    blackjack_stats = {
+        "games_played": blackjack_games,
+        "wins": blackjack_wins,
+        "losses": blackjack_losses,
+        "pushes": blackjack_pushes,
+        "win_percentage": blackjack_win_percentage,
+        "loss_percentage": blackjack_loss_percentage,
+        "push_percentage": blackjack_push_percentage,
     }
 
-
-    # All-time stats from database
-    saved = get_player_stats(name)
-    if saved:
-        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
-
-        if games_played > 0:
-            win_percentage = round((wins / games_played) * 100, 2)
-            loss_percentage = round((losses / games_played) * 100, 2)
-            push_percentage = round((pushes / games_played) * 100, 2)
-        else:
-            win_percentage = 0
-            loss_percentage = 0
-            push_percentage = 0
-
+    # Keep all_time so the current frontend does not break
+    if player_saved:
         alltime_stats = {
-            "games_played": games_played,
-            "wins":         wins,
-            "losses":       losses,
-            "pushes":       pushes,
-            "bankrupts":    bankrupts,
-            "chips":        chips,
-            "win_percentage": win_percentage,
-            "loss_percentage": loss_percentage,
-            "push_percentage": push_percentage,
+            "games_played": blackjack_games,
+            "wins": blackjack_wins,
+            "losses": blackjack_losses,
+            "pushes": blackjack_pushes,
+            "bankrupts": bankrupts,
+            "chips": chips,
+            "win_percentage": blackjack_win_percentage,
+            "loss_percentage": blackjack_loss_percentage,
+            "push_percentage": blackjack_push_percentage,
         }
     else:
         alltime_stats = None
 
+    # Slots stats
+    if slots_saved:
+        (
+            _slot_player_name,
+            slot_spins,
+            slot_wins,
+            slot_losses,
+            slot_total_wagered,
+            slot_total_payout,
+            slot_biggest_win,
+        ) = slots_saved
+    else:
+        slot_spins = 0
+        slot_wins = 0
+        slot_losses = 0
+        slot_total_wagered = 0
+        slot_total_payout = 0
+        slot_biggest_win = 0
+
+    slot_win_percentage = (
+        round((slot_wins / slot_spins) * 100, 2)
+        if slot_spins > 0
+        else 0
+    )
+
+    slots_stats = {
+        "spins": slot_spins,
+        "wins": slot_wins,
+        "losses": slot_losses,
+        "total_wagered": slot_total_wagered,
+        "total_payout": slot_total_payout,
+        "biggest_win": slot_biggest_win,
+        "net_profit": slot_total_payout - slot_total_wagered,
+        "win_percentage": slot_win_percentage,
+    }
+
+    # Roulette stats
+    if roulette_saved:
+        (
+            _roulette_player_name,
+            roulette_spins,
+            roulette_wins,
+            roulette_losses,
+            roulette_total_wagered,
+            roulette_total_payout,
+            roulette_biggest_win,
+            straight_bets,
+            color_bets,
+            parity_bets,
+            dozen_bets,
+        ) = roulette_saved
+    else:
+        roulette_spins = 0
+        roulette_wins = 0
+        roulette_losses = 0
+        roulette_total_wagered = 0
+        roulette_total_payout = 0
+        roulette_biggest_win = 0
+        straight_bets = 0
+        color_bets = 0
+        parity_bets = 0
+        dozen_bets = 0
+
+    roulette_win_percentage = (
+        round((roulette_wins / roulette_spins) * 100, 2)
+        if roulette_spins > 0
+        else 0
+    )
+
+    roulette_stats = {
+        "spins": roulette_spins,
+        "wins": roulette_wins,
+        "losses": roulette_losses,
+        "total_wagered": roulette_total_wagered,
+        "total_payout": roulette_total_payout,
+        "biggest_win": roulette_biggest_win,
+        "net_profit": roulette_total_payout - roulette_total_wagered,
+        "win_percentage": roulette_win_percentage,
+        "straight_bets": straight_bets,
+        "color_bets": color_bets,
+        "parity_bets": parity_bets,
+        "dozen_bets": dozen_bets,
+    }
+
+    session_stats = {
+        "chips": session.get("chips", Player.STARTING_CHIPS),
+        "wins": session.get("wins", 0),
+        "losses": session.get("losses", 0),
+        "pushes": session.get("pushes", 0),
+    }
+
     return jsonify({
-        "status":       "success",
-        "name":         name,
-        "session":      session_stats,
-        "all_time":     alltime_stats,
+        "status": "success",
+        "name": player_name,
+        "session": session_stats,
+
+        # Shared player information
+        "shared": {
+            "chips": chips,
+            "bankrupts": bankrupts,
+        },
+
+        # Keep old response for the existing frontend
+        "all_time": alltime_stats,
+
+        # New game-specific sections
+        "blackjack": blackjack_stats,
+        "slots": slots_stats,
+        "roulette": roulette_stats,
     })
 
 
@@ -841,30 +973,159 @@ def save():
 
 @app.route("/api/leaderboard", methods=["GET"])
 def leaderboard():
+    """Return shared chips and game-specific stats for every player."""
     players = get_all_player_stats()
+    all_slots = get_all_slots_stats()
+    all_roulette = get_all_roulette_stats()
 
-    leaderboard = []
+    # Make lookup dictionaries using player name
+    slots_by_player = {
+        row[0].lower(): row
+        for row in all_slots
+    }
+
+    roulette_by_player = {
+        row[0].lower(): row
+        for row in all_roulette
+    }
+
+    leaderboard_data = []
 
     for player in players:
-        player_name, chips, wins, losses, pushes, games_played, bankrupts = player
+        (
+            player_name,
+            chips,
+            blackjack_wins,
+            blackjack_losses,
+            blackjack_pushes,
+            blackjack_games,
+            bankrupts,
+        ) = player
 
-        if games_played > 0:
-            win_percentage = round((wins / games_played) * 100, 2)
+        if blackjack_games > 0:
+            blackjack_win_percentage = round(
+                (blackjack_wins / blackjack_games) * 100, 2
+            )
         else:
-            win_percentage = 0
+            blackjack_win_percentage = 0
 
-        leaderboard.append({
+        # Get this player's Slots stats
+        slot_row = slots_by_player.get(player_name.lower())
+
+        if slot_row:
+            (
+                _slot_name,
+                slot_spins,
+                slot_wins,
+                slot_losses,
+                slot_total_wagered,
+                slot_total_payout,
+                slot_biggest_win,
+            ) = slot_row
+        else:
+            slot_spins = 0
+            slot_wins = 0
+            slot_losses = 0
+            slot_total_wagered = 0
+            slot_total_payout = 0
+            slot_biggest_win = 0
+
+        slot_win_percentage = (
+            round((slot_wins / slot_spins) * 100, 2)
+            if slot_spins > 0
+            else 0
+        )
+
+        # Get this player's Roulette stats
+        roulette_row = roulette_by_player.get(player_name.lower())
+
+        if roulette_row:
+            (
+                _roulette_name,
+                roulette_spins,
+                roulette_wins,
+                roulette_losses,
+                roulette_total_wagered,
+                roulette_total_payout,
+                roulette_biggest_win,
+                straight_bets,
+                color_bets,
+                parity_bets,
+                dozen_bets,
+            ) = roulette_row
+        else:
+            roulette_spins = 0
+            roulette_wins = 0
+            roulette_losses = 0
+            roulette_total_wagered = 0
+            roulette_total_payout = 0
+            roulette_biggest_win = 0
+            straight_bets = 0
+            color_bets = 0
+            parity_bets = 0
+            dozen_bets = 0
+
+        roulette_win_percentage = (
+            round((roulette_wins / roulette_spins) * 100, 2)
+            if roulette_spins > 0
+            else 0
+        )
+
+        leaderboard_data.append({
+            # Existing fields used by the current frontend
             "player_name": player_name,
             "chips": chips,
-            "wins": wins,
-            "losses": losses,
-            "pushes": pushes,
-            "games_played": games_played,
+            "wins": blackjack_wins,
+            "losses": blackjack_losses,
+            "pushes": blackjack_pushes,
+            "games_played": blackjack_games,
             "bankrupts": bankrupts,
-            "win_percentage": win_percentage
+            "win_percentage": blackjack_win_percentage,
+
+            # New Blackjack section
+            "blackjack": {
+                "games_played": blackjack_games,
+                "wins": blackjack_wins,
+                "losses": blackjack_losses,
+                "pushes": blackjack_pushes,
+                "win_percentage": blackjack_win_percentage,
+            },
+
+            # New Slots section
+            "slots": {
+                "spins": slot_spins,
+                "wins": slot_wins,
+                "losses": slot_losses,
+                "total_wagered": slot_total_wagered,
+                "total_payout": slot_total_payout,
+                "biggest_win": slot_biggest_win,
+                "net_profit": slot_total_payout - slot_total_wagered,
+                "win_percentage": slot_win_percentage,
+            },
+
+            # New Roulette section
+            "roulette": {
+                "spins": roulette_spins,
+                "wins": roulette_wins,
+                "losses": roulette_losses,
+                "total_wagered": roulette_total_wagered,
+                "total_payout": roulette_total_payout,
+                "biggest_win": roulette_biggest_win,
+                "net_profit": (
+                    roulette_total_payout - roulette_total_wagered
+                ),
+                "win_percentage": roulette_win_percentage,
+                "straight_bets": straight_bets,
+                "color_bets": color_bets,
+                "parity_bets": parity_bets,
+                "dozen_bets": dozen_bets,
+            },
         })
 
-    return jsonify({"leaderboard": leaderboard})
+    return jsonify({
+        "status": "success",
+        "leaderboard": leaderboard_data,
+    })
 
 
 # ------------------------------------------------------------------

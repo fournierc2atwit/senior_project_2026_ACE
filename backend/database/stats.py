@@ -321,3 +321,71 @@ def get_roulette_stats(player_name):
     conn.close()
 
     return stats
+
+def get_all_slots_stats():
+    if not _DB_AVAILABLE:
+        return [
+            (
+                stats["player_name"],
+                stats["spins"],
+                stats["wins"],
+                stats["losses"],
+                stats["total_wagered"],
+                stats["total_payout"],
+                stats["biggest_win"],
+            )
+            for stats in _IN_MEMORY_SLOTS_STATS.values()
+        ]
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT player_name, spins, wins, losses,
+               total_wagered, total_payout, biggest_win
+        FROM slots_stats;
+    """)
+
+    players = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return players
+
+
+def get_all_roulette_stats():
+    if not _DB_AVAILABLE:
+        return [
+            (
+                stats["player_name"],
+                stats["spins"],
+                stats["wins"],
+                stats["losses"],
+                stats["total_wagered"],
+                stats["total_payout"],
+                stats["biggest_win"],
+                stats["straight_bets"],
+                stats["color_bets"],
+                stats["parity_bets"],
+                stats["dozen_bets"],
+            )
+            for stats in _IN_MEMORY_ROULETTE_STATS.values()
+        ]
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT player_name, spins, wins, losses,
+               total_wagered, total_payout, biggest_win,
+               straight_bets, color_bets, parity_bets, dozen_bets
+        FROM roulette_stats;
+    """)
+
+    players = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return players
