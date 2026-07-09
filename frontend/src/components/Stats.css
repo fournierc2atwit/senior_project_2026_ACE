@@ -86,7 +86,7 @@
 /* Stat cards grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(7, 1fr);
   gap: 0.75rem;
 }
 
