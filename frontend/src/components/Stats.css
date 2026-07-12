@@ -10,14 +10,15 @@
 }
 
 .stats-root {
-  position: relative;
-  min-height: 100vh;
+  position: absolute;
+  inset: 0;
   background-color: var(--felt);
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
     repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
   font-family: 'Crimson Pro', Georgia, serif;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .stats-felt {
@@ -46,7 +47,7 @@
   z-index: 1;
   max-width: 860px;
   margin: 0 auto;
-  padding: 4rem 2rem 3rem;
+  padding: 4rem 2rem 5rem;
 }
 
 .stats-header { text-align: center; margin-bottom: 2.5rem; }
@@ -86,7 +87,7 @@
 /* Stat cards grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 0.75rem;
 }
 
@@ -104,6 +105,13 @@
 .stat-card-green { border-color: rgba(111,207,151,0.3); }
 .stat-card-red   { border-color: rgba(235,87,87,0.3);   }
 .stat-card-dim   { opacity: 0.6; }
+
+.stat-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1rem;
+  color: var(--gold-light);
+  margin-bottom: 0.4rem;
+}
 
 .stat-value {
   font-family: 'Playfair Display', serif;
@@ -128,12 +136,13 @@
   background: rgba(0,0,0,0.25);
   border: 1px solid rgba(201,168,76,0.15);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .lb-header {
   display: grid;
-  grid-template-columns: 40px 1fr 100px 80px 90px;
+  grid-template-columns: 40px minmax(120px, 1fr) 100px 80px 90px;
+  min-width: 520px;
   padding: 0.6rem 1rem;
   background: rgba(201,168,76,0.1);
   border-bottom: 1px solid rgba(201,168,76,0.2);

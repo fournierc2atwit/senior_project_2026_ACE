@@ -198,33 +198,59 @@ def new_game():
     name = data.get("name", "Player")
     name = name.strip().lower()
 
-    saved = get_player_stats(name)
+    tutorial_mode = data.get("tutorial", False)
+    restore_session = data.get("restore_session", False)
 
-    if saved:
-        player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
-        # Reset chips if the player was bankrupt last session
-        if chips <= 0:
-            chips = Player.STARTING_CHIPS
-    else:
-        chips     = Player.STARTING_CHIPS
-        wins      = 0
-        losses    = 0
-        pushes    = 0
+    if tutorial_mode:
+        player_name = "Tutorial"
+        chips = Player.STARTING_CHIPS
+        wins = 0
+        losses = 0
+        pushes = 0
         bankrupts = 0
+    elif restore_session:
+        player_name = name
+        chips = data.get("chips", Player.STARTING_CHIPS)
+        wins = data.get("wins", 0)
+        losses = data.get("losses", 0)
+        pushes = data.get("pushes", 0)
+        bankrupts = data.get("bankrupts", 0)
+    else:
+        saved = get_player_stats(name)
+
+        if saved:
+            player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
+            # Reset chips if the player was bankrupt last session
+            if chips <= 0:
+                chips = Player.STARTING_CHIPS
+        else:
+            chips     = Player.STARTING_CHIPS
+            wins      = 0
+            losses    = 0
+            pushes    = 0
+            bankrupts = 0
 
     session.clear()
-    session["name"]      = name
+    session["name"]      = player_name
     session["chips"]     = chips
     session["wins"]      = wins
     session["losses"]    = losses
     session["pushes"]    = pushes
     session["bankrupts"] = bankrupts
+    if tutorial_mode:
+        session["tutorial"] = True
+    else:
+        session.pop("tutorial", None)
+
+    returning = False
+    if not tutorial_mode and not restore_session:
+        returning = saved is not None
 
     return jsonify({
         "status":   "success",
-        "name":     name,
+        "name":     player_name,
         "chips":    chips,
-        "returning": saved is not None,
+        "returning": returning,
     })
 
 
@@ -1134,6 +1160,9 @@ def leaderboard():
 
 def _persist_stats():
     """Write current session stats to the database."""
+    if session.get("tutorial", False):
+        return
+
     chips = session.get("chips", Player.STARTING_CHIPS)
     bankrupts = session.get("bankrupts", 0)
     if chips <= 0:

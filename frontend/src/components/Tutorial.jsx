@@ -78,7 +78,7 @@ const STEPS = [
   },
 ];
 
-export default function Tutorial({ onNavigate }) {
+export default function Tutorial({ onNavigate, playerName, playerChips }) {
   const [step, setStep]             = useState(0);
   const [playerHand, setPlayerHand] = useState(null);
   const [dealerHand, setDealerHand] = useState(null);
@@ -92,10 +92,38 @@ export default function Tutorial({ onNavigate }) {
 
   const current = STEPS[step];
 
-  // Start a fresh session on mount
+  const restorePlayerSession = async () => {
+    if (!playerName) return;
+    try {
+      await axios.post("/api/new-game", {
+        name: playerName,
+        restore_session: true,
+        chips: playerChips,
+      });
+    } catch (err) {
+      console.error("Failed to restore player session:", err);
+    }
+  };
+
+  const handleExit = async () => {
+    await restorePlayerSession();
+    onNavigate("menu");
+  };
+
   useEffect(() => {
-    axios.post("/api/new-game", { name: "Tutorial" });
-  }, []);
+    const initTutorial = async () => {
+      try {
+        await axios.post("/api/new-game", { name: "Tutorial", tutorial: true });
+      } catch (err) {
+        console.error("Failed to initialize tutorial session:", err);
+      }
+    };
+
+    initTutorial();
+    return () => {
+      restorePlayerSession();
+    };
+  }, [playerName, playerChips]);
 
   const fetchHint = async () => {
     try {
@@ -231,7 +259,7 @@ export default function Tutorial({ onNavigate }) {
         );
       case "finish":
         return (
-          <button className="tut-btn-next" onClick={() => onNavigate("menu")}>
+          <button className="tut-btn-next" onClick={handleExit}>
             Back to Menu →
           </button>
         );
@@ -249,7 +277,7 @@ export default function Tutorial({ onNavigate }) {
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={() => onNavigate("menu")}>
+<button className="table-menu-btn" onClick={handleExit}>
         ← Menu
       </button>
 

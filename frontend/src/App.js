@@ -275,7 +275,7 @@ export default function App() {
   />
 )}
       {screen === "stats"    && <Stats    onNavigate={navigate} playerName={playerName} />}
-      {screen === "tutorial" && <Tutorial onNavigate={navigate} />}
+      {screen === "tutorial" && <Tutorial onNavigate={navigate} playerName={playerName} playerChips={playerChips} />}
     </div>
   );
 }
