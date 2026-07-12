@@ -33,22 +33,22 @@ def _reason(action, raw_code, total, is_soft, is_pair, pair_value, dealer_value)
     # SPLIT
     if action == 'P':
         if pair_value == 11:
-            return ("Always split Aces. Kept together they only make a soft 12, but "
+            return ("You should always split Aces. Kept together they only make a soft 12, but "
                     "split into two hands each starting with an Ace you get two strong "
                     "chances to draw a ten and make 21.")
         if pair_value == 8:
-            return ("Always split 8s. Together they make 16 — the worst total in "
+            return ("You should always split 8s. Together they make 16 — the worst total in "
                     "blackjack. Splitting trades one losing hand for two fresh hands "
                     "that each start with an 8.")
         return (f"Splitting beats playing one mediocre total here: the dealer's "
-                f"{d_label} is weak and likely to bust, so you put more money out as "
+                f"{d_label} is weak and likely to bust, so you should put more money out as "
                 f"two separate hands while the dealer is in trouble.")
  
     # DOUBLE
     if action == 'D':
         if is_soft:
             return (f"Your hand is soft (the Ace counts as 11), so one more card can't "
-                    f"bust you, and the dealer's {d_label} is weak — the ideal moment "
+                    f"bust you, and the dealer's {d_label} is weak. The ideal moment "
                     f"to put more money in while you're safe and the dealer is in "
                     f"trouble. Just remember you only get one card.")
         return (f"A total of {total} is a strong starting point and the dealer's "
