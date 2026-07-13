@@ -21,6 +21,7 @@ from backend.game.roulette.wheel import Wheel
 from backend.game.roulette.rules import Rules as RouletteRules
 from backend.game.slots.machine import SlotMachine
 from backend.game.slots.rules import Rules as SlotRules
+from backend.ai.roulette_advise import RouletteAdvisor
 from database.db import create_tables
 from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats,  get_all_slots_stats
 
@@ -39,6 +40,7 @@ _wheel = Wheel()
 
 # Slot machine instance — stateless, created once at startup
 _slot_machine = SlotMachine()
+_roulette_advisor = RouletteAdvisor()
 
 # ------------------------------------------------------------------
 # Helpers
@@ -558,6 +560,31 @@ def hint():
 # Routes — Roulette
 # ------------------------------------------------------------------
 
+@app.route("/api/roulette/advice", methods=["POST"])
+def roulette_advice():
+    """Explain the selected roulette bet before the player spins."""
+    data = request.get_json() or {}
+    bet_type = data.get("bet_type")
+    bet_value = data.get("bet_value")
+    amount = data.get("amount", 0)
+    chips = session.get("chips", Player.STARTING_CHIPS)
+
+    try:
+        amount = int(amount)
+        if bet_type in ("straight", "dozen") and bet_value != "00":
+            bet_value = int(bet_value)
+        RouletteRules.validate_bet(bet_type, bet_value, _wheel)
+    except (TypeError, ValueError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+    if amount <= 0:
+        return jsonify({"status": "error", "message": "Place a bet first."}), 400
+
+    advice = _roulette_advisor.recommend(
+        chips, amount, bet_type, bet_value, session.get("roulette_history", [])
+    )
+    return jsonify({"status": "success", "advice": advice})
+
 @app.route("/api/roulette/spin", methods=["POST"])
 def roulette_spin():
     """
@@ -599,6 +626,24 @@ def roulette_spin():
     number = _wheel.spin()
     result = RouletteRules.resolve_bet(bet_type, bet_value, amount, _wheel, number)
 
+    history = session.get("roulette_history", [])
+    history.append({
+        "number": number,
+        "color": result["color"],
+        "dozen": (number - 1) // 12 + 1 if isinstance(number, int) and number else None,
+        "is_odd": isinstance(number, int) and number != 0 and number % 2 == 1,
+        "is_even": isinstance(number, int) and number != 0 and number % 2 == 0,
+        "amount": amount,
+        "won": result["won"],
+    })
+    session["roulette_history"] = history[-10:]
+    advice_evaluation = _roulette_advisor.evaluate({
+        **result,
+        "bet_type": bet_type,
+        "bet_value": bet_value,
+        "amount": amount,
+    })
+
     new_chips = session["chips"] + result["total_return"]
     session["chips"] = new_chips
 
@@ -626,6 +671,7 @@ def roulette_spin():
         "payout":       result["payout"],
         "total_return": result["total_return"],
         "chips":        new_chips,
+        "advice_evaluation": advice_evaluation,
     })
 
 @app.route("/api/roulette/stats", methods=["GET"])

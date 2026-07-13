@@ -62,19 +62,23 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   const [loading, setLoading]   = useState(false);
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState("");
+  const [advice, setAdvice]     = useState(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
   const wheelRef                = useRef(null);
   const [wheelRadius, setWheelRadius] = useState(0);
 
   useEffect(() => {
-    if (!wheelRef.current) return;
+    const wheel = wheelRef.current;
+    if (!wheel) return;
+
     const updateWheelRadius = () => {
-      const rect = wheelRef.current.getBoundingClientRect();
+      const rect = wheel.getBoundingClientRect();
       setWheelRadius(rect.width / 2 - Math.max(20, rect.width * 0.06));
     };
 
     updateWheelRadius();
     const resizeObserver = new ResizeObserver(updateWheelRadius);
-    resizeObserver.observe(wheelRef.current);
+    resizeObserver.observe(wheel);
 
     return () => resizeObserver.disconnect();
   }, []);
@@ -82,6 +86,10 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   useEffect(() => {
     if (onSetChips) onSetChips(chips);
   }, [chips, onSetChips]);
+
+  useEffect(() => {
+    setAdvice(null);
+  }, [amount, betType, betValue]);
 
   const clearError = () => setError("");
 
@@ -97,6 +105,28 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
     setBetType(type);
     setBetValue(null);
     clearError();
+  };
+
+  const handleAdvice = async () => {
+    if (amount === 0 || betValue === null) {
+      setError("Place a bet and select a value first.");
+      return;
+    }
+
+    setAdviceLoading(true);
+    clearError();
+    try {
+      const res = await axios.post("/api/roulette/advice", {
+        bet_type: betType,
+        bet_value: betValue,
+        amount,
+      });
+      setAdvice(res.data.advice);
+    } catch (err) {
+      setError(err.response?.data?.message || "Advice is unavailable right now.");
+    } finally {
+      setAdviceLoading(false);
+    }
   };
 
   const handleMenu = async () => {
@@ -131,6 +161,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
 
       setTimeout(() => {
         setResult(res.data);
+        setAdvice(res.data.advice_evaluation);
         setChips(res.data.chips);
         setSpinning(false);
         setLoading(false);
@@ -215,6 +246,18 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
       {/* ── Controls ── */}
       <div className="rt-controls">
 
+        {advice && (
+          <div className="rt-advice" aria-live="polite">
+            <p className="rt-advice-title">ACE Insight</p>
+            <p>{advice.explanation}</p>
+            {advice.warnings?.map((warning) => (
+              <p key={warning.code} className={`rt-advice-warning rt-advice-${warning.severity}`}>
+                {warning.message}
+              </p>
+            ))}
+          </div>
+        )}
+
         <div className="rt-bet-type-row">
           {["straight", "color", "parity", "dozen"].map((type) => (
             <button
@@ -278,6 +321,9 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         <div className="rt-action-row">
           <button className="btn-clear" onClick={clearBet} disabled={amount === 0 || spinning}>Clear</button>
           <div className="bet-display">Bet: <strong>${amount}</strong></div>
+          <button className="btn-clear" onClick={handleAdvice} disabled={spinning || adviceLoading}>
+            {adviceLoading ? "Thinking..." : "Ask ACE"}
+          </button>
           <button
             className={`btn-deal ${amount > 0 && betValue !== null ? "btn-deal-active" : ""}`}
             onClick={handleSpin}

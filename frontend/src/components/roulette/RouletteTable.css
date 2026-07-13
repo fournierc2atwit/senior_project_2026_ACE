@@ -203,6 +203,28 @@
   gap: 0.5rem;
 }
 
+.rt-advice {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid rgba(201,168,76,0.35);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.2);
+  color: var(--cream-dim);
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.rt-advice p { margin: 0; }
+.rt-advice p + p { margin-top: 0.55rem; }
+.rt-advice-title {
+  color: var(--gold-light);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+}
+.rt-advice-warning { color: #f0c674; }
+.rt-advice-high { color: #f08080; }
+
 .rt-type-btn {
   background: rgba(0,0,0,0.3);
   border: 1px solid rgba(200,185,138,0.3);
@@ -342,11 +364,17 @@
 .rt-action-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 0.6rem;
   margin-top: 0.15rem;
 }
 
 .bet-display {
+  flex-basis: 100%;
+  order: -1;
+  text-align: center;
   font-size: 1rem;
   color: var(--cream-dim);
 }
