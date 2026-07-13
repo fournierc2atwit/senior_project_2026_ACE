@@ -41,7 +41,7 @@ def _deviation_reason(dev, total, dealer_value, true_count, is_pair):
         return (f"The true count is {_tc(true_count)} (index {index}), so a lot of "
                 f"high cards are still in the shoe. That makes your next card more "
                 f"likely to bust this stiff {total}, and it makes the dealer more "
-                f"likely to bust too — so you stand on a hand you'd normally hit.")
+                f"likely to bust too, so you should stand on a hand you'd normally hit.")
 
     if action == 'H':   # hit where basic would stand
         return (f"The true count is {_tc(true_count)} (index {index}), meaning the "
@@ -51,7 +51,7 @@ def _deviation_reason(dev, total, dealer_value, true_count, is_pair):
 
     if action == 'D':   # double where basic would hit
         return (f"The true count is {_tc(true_count)} (index {index}), so the next "
-                f"card is likely to be a ten — turning your {total} into a strong "
+                f"card is likely to be a ten, turning your {total} into a strong "
                 f"total against the dealer's {d_label}. You double to get more money "
                 f"out while the odds favor you (and you take just one card).")
 
@@ -59,7 +59,7 @@ def _deviation_reason(dev, total, dealer_value, true_count, is_pair):
         return (f"Advanced play: normally you never break up a 20, but at a true count "
                 f"of {_tc(true_count)} (index {index}) the dealer's weak {d_label} "
                 f"plus all the tens left make two hands each starting with a ten worth "
-                f"more than standing on 20. This is high-variance — most casual players "
+                f"more than standing on 20. This is high-variance, most casual players "
                 f"skip it.")
 
     return ""
@@ -171,7 +171,7 @@ class CountAdvisor:
         else:
             explanation = (
                 f"Decline insurance. At a true count of {_tc(true_count)} there aren't "
-                f"enough tens left to make it pay — insurance only becomes a good bet "
+                f"enough tens left to make it pay, insurance only becomes a good bet "
                 f"once the true count reaches +{INSURANCE_INDEX}.")
         return {"offered": True, "take": take, "explanation": explanation}
 
