@@ -67,8 +67,16 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
 
   useEffect(() => {
     if (!wheelRef.current) return;
-    const rect = wheelRef.current.getBoundingClientRect();
-    setWheelRadius(rect.width / 2 - 28);
+    const updateWheelRadius = () => {
+      const rect = wheelRef.current.getBoundingClientRect();
+      setWheelRadius(rect.width / 2 - Math.max(20, rect.width * 0.06));
+    };
+
+    updateWheelRadius();
+    const resizeObserver = new ResizeObserver(updateWheelRadius);
+    resizeObserver.observe(wheelRef.current);
+
+    return () => resizeObserver.disconnect();
   }, []);
 
   useEffect(() => {

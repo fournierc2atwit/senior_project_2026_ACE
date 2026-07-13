@@ -92,9 +92,10 @@
 
 .rt-wheel {
   position: relative;
-  width: min(320px, calc(100vw - 3rem));
+  container-type: inline-size;
+  width: min(480px, calc(100vw - 29rem));
   aspect-ratio: 1 / 1;
-  max-width: 320px;
+  max-width: 480px;
   border-radius: 50%;
   border: 6px solid var(--gold-dark);
   box-shadow:
@@ -111,13 +112,13 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 32px;
-  height: 32px;
-  margin: -16px;
+  width: 8cqw;
+  height: 8cqw;
+  margin: -4cqw;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 3.25cqw, 1.1rem);
   font-weight: 700;
   color: #f0e6cc;
   text-shadow: 0 1px 2px rgba(0,0,0,0.8);
@@ -177,8 +178,13 @@
 
 /* ── Controls ─────────────────────────────────────────────────── */
 .rt-controls {
-  position: relative;
+  position: absolute;
+  top: 5.5rem;
+  right: 1.5rem;
+  bottom: 1.5rem;
   z-index: 5;
+  width: min(360px, 30vw);
+  box-sizing: border-box;
   background: rgba(0,0,0,0.35);
   border-top: 1px solid rgba(201,168,76,0.2);
   padding: 1rem 1.5rem 1.5rem;
@@ -186,10 +192,14 @@
   flex-direction: column;
   align-items: center;
   gap: 0.9rem;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .rt-bet-type-row {
-  display: flex;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.5rem;
 }
 
@@ -263,14 +273,15 @@
 
 .rt-number-grid {
   display: grid;
-  grid-template-columns: repeat(13, 28px);
+  grid-template-columns: repeat(13, minmax(0, 1fr));
   gap: 3px;
-  max-width: 480px;
+  width: 100%;
 }
 
 .rt-number-btn {
-  width: 28px;
-  height: 28px;
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.1);
   font-size: 0.65rem;
@@ -381,5 +392,28 @@
   justify-content: center;
   min-height: 0;
   gap: 0.5rem;
-  padding: 2rem 0 0.5rem;
+  margin-right: min(420px, 34vw);
+  padding: 2rem 1rem 0.5rem;
+}
+
+
+@media (max-width: 850px), (max-height: 700px) {
+  .rt-wheel {
+    width: min(320px, calc(100vw - 3rem));
+    max-width: 320px;
+  }
+
+  .rt-layout {
+    margin-right: 0;
+  }
+
+  .rt-controls {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    max-height: none;
+    overflow-y: visible;
+  }
 }
