@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import Hud from "../blackjack/Hud";
 import "./SlotsTable.css";
@@ -34,6 +34,18 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const mountedRef               = useRef(true);
+  const spinTimersRef            = useRef([]);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    const spinTimers = spinTimersRef.current;
+
+    return () => {
+      mountedRef.current = false;
+      spinTimers.forEach(clearTimeout);
+    };
+  }, []);
 
   const clearError = () => setError("");
 
@@ -51,11 +63,14 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
 
     try {
       const res = await axios.post("/api/slots/spin", { amount });
+      if (!mountedRef.current) return;
+
       const finalReels = res.data.reels;
 
       // Stop each reel in sequence at staggered times
       SPIN_DURATIONS.forEach((duration, i) => {
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          if (!mountedRef.current) return;
           setReels((prev) => {
             const next = [...prev];
             next[i] = finalReels[i];
@@ -67,18 +82,22 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
             return next;
           });
         }, duration);
+        spinTimersRef.current.push(timer);
       });
 
       // Reveal result after the last reel stops
-      setTimeout(() => {
+      const resultTimer = setTimeout(() => {
+        if (!mountedRef.current) return;
         setResult(res.data);
         setChips(res.data.chips);
         if (onSetChips) onSetChips(res.data.chips);
         setSpinning(false);
         setLoading(false);
       }, SPIN_DURATIONS[SPIN_DURATIONS.length - 1] + 200);
+      spinTimersRef.current.push(resultTimer);
 
     } catch (err) {
+      if (!mountedRef.current) return;
       const msg = err.response?.data?.message || "Spin failed. Try again.";
       setError(msg);
       setSpinning(false);

@@ -198,7 +198,10 @@ class Rules:
 # python -m game.roulette.rules
 # ----------------------------------------------------------------------
 if __name__ == "__main__":
-    from game.roulette.wheel import Wheel
+    try:
+        from game.roulette.wheel import Wheel
+    except ImportError:
+        from backend.game.roulette.wheel import Wheel
 
     print("=== Rules Tests ===\n")
 

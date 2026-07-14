@@ -33,6 +33,16 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
 
   const clearError = () => setError("");
 
+  const resultMessageFor = (data) => {
+    if (data.player_hand?.blackjack) {
+      return data.outcome === "push"
+        ? "Blackjack! Dealer also has Blackjack — bet returned."
+        : "Blackjack! You win 3:2!";
+    }
+    if (data.dealer_hand?.blackjack) return "Dealer has Blackjack. You lose.";
+    return data.message;
+  };
+
   const addChips = (amount) => {
     if (bet + amount > chips) return;
     setBet((b) => b + amount);
@@ -50,6 +60,17 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
+
+      if ("outcome" in res.data) {
+        setOutcome(res.data.outcome);
+        setMessage(resultMessageFor(res.data));
+        setPhase("result");
+        setHint(null);
+        setHandNote("");
+        setLoading(false);
+        return;
+      }
+
       setHandCount(res.data.hand_count ?? 1);
       setActiveHandIndex(res.data.active_hand_index ?? 0);
       setCanSplit(res.data.can_split ?? false);
@@ -74,7 +95,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       if (res.data.player_hand) setPlayerHand(res.data.player_hand);
       if (res.data.dealer_hand) setDealerHand(res.data.dealer_hand);
       setOutcome(res.data.outcome);
-      setMessage(res.data.message);
+      setMessage(resultMessageFor(res.data));
       setPhase("result");
       setHint(null);
       setHandNote("");

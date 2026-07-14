@@ -31,11 +31,6 @@ export default function Stats({ onNavigate, playerName }) {
     return `${Math.round((stats.wins / stats.games_played) * 100)}%`;
   };
 
-  const formatPlayerName = (name) => {
-    if (!name) return "Your";
-    return name.charAt(0).toUpperCase() + name.slice(1);
-  };
-
   const statsToShow = playerStats?.blackjack || playerStats?.all_time || null;
   const slotsStats = playerStats?.slots || {
     spins: 0,

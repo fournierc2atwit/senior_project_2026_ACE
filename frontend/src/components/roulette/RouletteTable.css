@@ -20,7 +20,8 @@
   font-family: 'Crimson Pro', Georgia, serif;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .rt-felt {
@@ -93,7 +94,7 @@
 .rt-wheel {
   position: relative;
   container-type: inline-size;
-  width: min(480px, calc(100vw - 29rem));
+  width: min(480px, calc(100vw - 3rem));
   aspect-ratio: 1 / 1;
   max-width: 480px;
   border-radius: 50%;
@@ -420,7 +421,7 @@
   justify-content: center;
   min-height: 0;
   gap: 0.5rem;
-  margin-right: min(420px, 34vw);
+  margin-right: 0;
   padding: 2rem 1rem 0.5rem;
 }
 

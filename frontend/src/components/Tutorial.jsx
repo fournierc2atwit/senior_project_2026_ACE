@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import Hand from "./blackjack/Hand";
 import Hud from "./blackjack/Hud";
@@ -92,7 +92,7 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
 
   const current = STEPS[step];
 
-  const restorePlayerSession = async () => {
+  const restorePlayerSession = useCallback(async () => {
     if (!playerName) return;
     try {
       await axios.post("/api/new-game", {
@@ -103,7 +103,7 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
     } catch (err) {
       console.error("Failed to restore player session:", err);
     }
-  };
+  }, [playerName, playerChips]);
 
   const handleExit = async () => {
     await restorePlayerSession();
@@ -120,10 +120,7 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
     };
 
     initTutorial();
-    return () => {
-      restorePlayerSession();
-    };
-  }, [playerName, playerChips]);
+  }, []);
 
   const fetchHint = async () => {
     try {
@@ -149,6 +146,23 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
     setDealerHand(res.data.dealer_hand);
     setChips(res.data.chips);
     setBet(amount);
+
+    if ("outcome" in res.data) {
+      setOutcome(res.data.outcome);
+      setMessage(
+        res.data.player_hand?.blackjack && res.data.outcome === "push"
+          ? "Blackjack! Dealer also has Blackjack — bet returned."
+          : res.data.player_hand?.blackjack
+            ? "Blackjack! You win 3:2!"
+            : res.data.dealer_hand?.blackjack
+              ? "Dealer has Blackjack. You lose."
+            : res.data.message
+      );
+      setPhase("result");
+      setStep(STEPS.findIndex(s => s.id === "result"));
+      return;
+    }
+
     setPhase("playing");
     await fetchHint();
 

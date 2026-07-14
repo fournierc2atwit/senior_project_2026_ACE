@@ -278,10 +278,32 @@ def deal():
     player_hand.add_card(deck.deal())
     dealer_hand.add_card(deck.deal())
 
+    session["chips"] = chips - bet
+
+    # A natural Blackjack is resolved before any player controls are exposed.
+    # This also handles a dealer Blackjack or a Blackjack push correctly.
+    if player_hand.is_blackjack() or dealer_hand.is_blackjack():
+        outcome = resolve_round([player_hand], dealer_hand, [bet], deck)[0]
+        message = _outcome_message(outcome)
+        _persist_stats()
+        bankrupt = session.get("chips", 0) <= 0
+        if bankrupt:
+            message = f"{message} You went bankrupt!"
+
+        return jsonify({
+            "status":      "success",
+            "player_hand": serialize_hand(player_hand),
+            "dealer_hand": serialize_hand(dealer_hand),
+            "chips":       session.get("chips"),
+            "bet":         bet,
+            "outcome":     outcome,
+            "message":     message,
+            "bankrupt":    bankrupt,
+        })
+
     session["deck"]          = save_deck(deck)
     persist_player_hands([player_hand], [bet], active_index=0)
     session["dealer_hand"] = save_hand(dealer_hand)
-    session["chips"]       = chips - bet
 
     return jsonify({
         "status":         "success",
@@ -579,6 +601,8 @@ def roulette_advice():
 
     if amount <= 0:
         return jsonify({"status": "error", "message": "Place a bet first."}), 400
+    if amount > chips:
+        return jsonify({"status": "error", "message": "Invalid bet amount."}), 400
 
     advice = _roulette_advisor.recommend(
         chips, amount, bet_type, bet_value, session.get("roulette_history", [])
