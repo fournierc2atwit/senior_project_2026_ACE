@@ -12,7 +12,8 @@
   font-family: 'Crimson Pro', Georgia, serif;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Progress dots */
@@ -56,11 +57,12 @@
 
 /* Tutorial overlay panel */
 .tut-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   z-index: 20;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  margin-top: auto;
   background: rgba(10, 25, 15, 0.92);
   border-top: 1px solid rgba(201,168,76,0.3);
   padding: 1.25rem 2rem 1.5rem;

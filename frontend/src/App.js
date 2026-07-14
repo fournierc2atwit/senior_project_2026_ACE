@@ -229,7 +229,7 @@ export default function App() {
     }
   };
 
-  const showMusicButton = screen !== "menu" || playerChips !== null;
+  const showMusicButton = screen !== "tutorial" && (screen !== "menu" || playerChips !== null);
 
   return (
     <div className="app-shell">
