@@ -65,7 +65,18 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   const [advice, setAdvice]     = useState(null);
   const [adviceLoading, setAdviceLoading] = useState(false);
   const wheelRef                = useRef(null);
+  const mountedRef              = useRef(true);
+  const spinTimerRef            = useRef(null);
   const [wheelRadius, setWheelRadius] = useState(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+      if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const wheel = wheelRef.current;
@@ -150,6 +161,8 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         amount,
       });
 
+      if (!mountedRef.current) return;
+
       const number = res.data.number;
       const target = angleForNumber(number);
 
@@ -159,7 +172,8 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         return baseFullTurns + EXTRA_SPINS * 360 + remainder + 360;
       });
 
-      setTimeout(() => {
+      spinTimerRef.current = setTimeout(() => {
+        if (!mountedRef.current) return;
         setResult(res.data);
         setAdvice(res.data.advice_evaluation);
         setChips(res.data.chips);
@@ -167,6 +181,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         setLoading(false);
       }, 3000);
     } catch {
+      if (!mountedRef.current) return;
       setError("Spin failed. Try again.");
       setSpinning(false);
       setLoading(false);

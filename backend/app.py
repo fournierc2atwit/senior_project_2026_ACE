@@ -160,30 +160,35 @@ def split_outcome_message(results):
 
     return ", ".join(parts).capitalize() + "."
 
-def apply_outcome(result):
-    """
-    Updates win/loss/push counters and chips in the session
-    based on the round result string.
-    Returns the updated chip count.
-    """
-    chips = session.get("chips", 0)
-    bet = session.get("bet", 0)
-    wins, losses, pushes = session.get("wins", 0), session.get("losses", 0), session.get("pushes", 0)
-    if result == "blackjack":
-        chips += bet + int(bet * 1.5); wins += 1
-    elif result == "win":
-        chips += bet * 2; wins += 1
-    elif result == "push":
-        chips += bet; pushes += 1
-    else:
-        losses += 1
-    session.update({"chips": chips, "wins": wins, "losses": losses, "pushes": pushes})
-    return chips
-
 def clear_round():
     """Remove active round data from session after a round ends."""
     for key in ["player_hand", "player_hands", "hand_bets", "hand_statuses", "active_hand_index", "dealer_hand", "deck", "bet"]:
         session.pop(key, None)
+
+def complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck,
+                             player_hand=None, bust=None):
+    """Resolve a completed Blackjack round and build its shared response."""
+    results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
+    message = split_outcome_message(results)
+    _persist_stats()
+    bankrupt = session.get("chips", 0) <= 0
+    if bankrupt:
+        message = f"{message} You went bankrupt!"
+    clear_round()
+
+    response = {
+        "status":      "success",
+        "dealer_hand": serialize_hand(dealer_hand),
+        "outcome":     summarize_split_outcome(results),
+        "message":     message,
+        "chips":       session.get("chips"),
+        "bankrupt":    bankrupt,
+    }
+    if player_hand is not None:
+        response["player_hand"] = serialize_hand(player_hand)
+    if bust is not None:
+        response["bust"] = bust
+    return jsonify(response)
 
 # ------------------------------------------------------------------
 # Routes — Blackjack
@@ -351,25 +356,9 @@ def hit():
             })
 
         dealer_hand = load_hand(session["dealer_hand"])
-        results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
-        summary = summarize_split_outcome(results)
-        message = split_outcome_message(results)
-        _persist_stats()
-        bankrupt = session.get("chips", 0) <= 0
-        if bankrupt:
-            message = f"{message} You went bankrupt!"
-        clear_round()
-
-        return jsonify({
-            "status":      "success",
-            "player_hand": serialize_hand(player_hand),
-            "dealer_hand": serialize_hand(dealer_hand),
-            "outcome":     summary,
-            "message":     message,
-            "chips":       session.get("chips"),
-            "bust":        True,
-            "bankrupt":    bankrupt,
-        })
+        return complete_blackjack_round(
+            player_hands, dealer_hand, hand_bets, deck, player_hand, bust=True
+        )
 
     persist_player_hands(player_hands, hand_bets, active_index, statuses)
     session["deck"] = save_deck(deck)
@@ -414,23 +403,7 @@ def stand():
         })
 
     dealer_hand = load_hand(session["dealer_hand"])
-    results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
-    summary = summarize_split_outcome(results)
-    message = split_outcome_message(results)
-    _persist_stats()
-    bankrupt = session.get("chips", 0) <= 0
-    if bankrupt:
-        message = f"{message} You went bankrupt!"
-    clear_round()
-
-    return jsonify({
-        "status":      "success",
-        "dealer_hand": serialize_hand(dealer_hand),
-        "outcome":     summary,
-        "message":     message,
-        "chips":       session.get("chips"),
-        "bankrupt":    bankrupt,
-    })
+    return complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck)
 
 
 @app.route("/api/double", methods=["POST"])
@@ -477,24 +450,9 @@ def double():
         })
 
     dealer_hand = load_hand(session["dealer_hand"])
-    results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
-    summary = summarize_split_outcome(results)
-    message = split_outcome_message(results)
-    _persist_stats()
-    bankrupt = session.get("chips", 0) <= 0
-    if bankrupt:
-        message = f"{message} You went bankrupt!"
-    clear_round()
-
-    return jsonify({
-        "status":      "success",
-        "player_hand": serialize_hand(player_hand),
-        "dealer_hand": serialize_hand(dealer_hand),
-        "outcome":     summary,
-        "message":     message,
-        "chips":       session.get("chips"),
-        "bankrupt":    bankrupt,
-    })
+    return complete_blackjack_round(
+        player_hands, dealer_hand, hand_bets, deck, player_hand
+    )
 
 
 @app.route("/api/split", methods=["POST"])

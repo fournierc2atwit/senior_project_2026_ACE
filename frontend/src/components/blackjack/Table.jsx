@@ -117,9 +117,19 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     fetchHint();
   };
 
-  const handleHit    = async () => { setLoading(true); try { const res = await axios.post("/api/hit");    processActionResponse(res); } catch { setError("Failed to hit. Try again."); }    setLoading(false); };
-  const handleStand  = async () => { setLoading(true); try { const res = await axios.post("/api/stand");  processActionResponse(res); } catch { setError("Failed to stand. Try again."); }  setLoading(false); };
-  const handleDouble = async () => { setLoading(true); try { const res = await axios.post("/api/double"); processActionResponse(res); } catch { setError("Not enough chips to double down."); } setLoading(false); };
+  const handleAction = async (endpoint, errorMessage) => {
+    setLoading(true);
+    try {
+      processActionResponse(await axios.post(endpoint));
+    } catch {
+      setError(errorMessage);
+    }
+    setLoading(false);
+  };
+
+  const handleHit    = () => handleAction("/api/hit", "Failed to hit. Try again.");
+  const handleStand  = () => handleAction("/api/stand", "Failed to stand. Try again.");
+  const handleDouble = () => handleAction("/api/double", "Not enough chips to double down.");
 
   const handleSplit = async () => {
     setLoading(true);

@@ -160,24 +160,13 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
       );
       setPhase("result");
       setStep(STEPS.findIndex(s => s.id === "result"));
+      setLoading(false);
       return;
     }
 
     setPhase("playing");
     await fetchHint();
-
-    // If player has Blackjack, auto-resolve and skip to result
-    if (res.data.player_hand.blackjack) {
-      const standRes = await axios.post("/api/stand");
-      setDealerHand(standRes.data.dealer_hand);
-      setChips(standRes.data.chips);
-      setOutcome(standRes.data.outcome);
-      setMessage(standRes.data.message);
-      setPhase("result");
-      setStep(STEPS.findIndex(s => s.id === "result"));
-    } else {
-      setStep((s) => s + 1);
-    }
+    setStep((s) => s + 1);
   } catch { }
   setLoading(false);
 };

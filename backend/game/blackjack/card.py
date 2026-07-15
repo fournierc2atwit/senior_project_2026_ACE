@@ -32,13 +32,9 @@ class Card:
         return self.suit in ['Hearts', 'Diamonds']
     def short_name(self):
         return f"{self.rank}{self.get_symbol()}"
+
     def __str__(self):
-        rank_name = {
-            "J": "Jack", 
-            "Q": "Queen", 
-            "K": "King", 
-            "A": "Ace"
-        }.get(self.rank, self.rank)
+        return f"{self.rank} of {self.suit}"
 
     def __repr__(self):
         return f"Card('{self.suit}', '{self.rank}', face_up={self.face_up})"
