@@ -33,6 +33,16 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual("success", data["status"])
         self.assertEqual(1000, data["chips"])
 
+    def test_new_game_initializes_an_unknown_player(self):
+        with patch("backend.app.get_player_stats", return_value=None):
+            response = self.client.post("/api/new-game", json={"name": "New Player"})
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("new player", data["name"])
+        self.assertEqual(1000, data["chips"])
+        self.assertFalse(data["returning"])
+
     def test_new_game_rejects_non_text_name(self):
         response = self.client.post("/api/new-game", json={"name": 42})
 

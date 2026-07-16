@@ -236,6 +236,7 @@ def new_game():
             if chips <= 0:
                 chips = Player.STARTING_CHIPS
         else:
+            player_name = name
             chips     = Player.STARTING_CHIPS
             wins      = 0
             losses    = 0
