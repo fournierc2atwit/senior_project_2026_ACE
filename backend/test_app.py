@@ -33,6 +33,18 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual("success", data["status"])
         self.assertEqual(1000, data["chips"])
 
+    def test_new_game_rejects_non_text_name(self):
+        response = self.client.post("/api/new-game", json={"name": 42})
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("error", response.get_json()["status"])
+
+    def test_deal_rejects_non_integer_bet(self):
+        response = self.client.post("/api/deal", json={"bet": "50"})
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("error", response.get_json()["status"])
+
     def test_deal_invalid_bet_returns_400(self):
         self.client.post("/api/new-game", json={"tutorial": True})
         response = self.client.post("/api/deal", json={"bet": 0})
@@ -83,6 +95,55 @@ class BackendApiTestCase(unittest.TestCase):
             self.assertIn(stand_data["outcome"], ["win", "lose", "push", "blackjack"])
             self.assertIsInstance(stand_data["chips"], int)
 
+    def test_player_natural_blackjack_resolves_immediately(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "Ace"), Card("Hearts", "9"),
+            Card("Diamonds", "King"), Card("Clubs", "7"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            response = self.client.post("/api/deal", json={"bet": 50})
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("blackjack", data["outcome"])
+        self.assertEqual("Blackjack! You win 3:2!", data["message"])
+        self.assertEqual(1075, data["chips"])
+
+    def test_dealer_natural_blackjack_resolves_immediately(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "9"), Card("Hearts", "Ace"),
+            Card("Diamonds", "7"), Card("Clubs", "King"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            response = self.client.post("/api/deal", json={"bet": 50})
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("lose", data["outcome"])
+        self.assertEqual(950, data["chips"])
+
+    def test_split_creates_two_hands_and_deducts_second_bet(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "8"), Card("Hearts", "6"),
+            Card("Diamonds", "8"), Card("Clubs", "10"),
+            Card("Spades", "3"), Card("Hearts", "4"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            self.client.post("/api/deal", json={"bet": 50})
+            response = self.client.post("/api/split")
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, data["hand_count"])
+        self.assertEqual(900, data["chips"])
+        self.assertEqual(2, len(data["player_hand"]["cards"]))
+
     def test_double_down_route(self):
         self.client.post("/api/new-game", json={"tutorial": True})
         deck = scripted_deck(
@@ -101,6 +162,48 @@ class BackendApiTestCase(unittest.TestCase):
             self.assertIsInstance(data["chips"], int)
             self.assertGreaterEqual(len(data["player_hand"]["cards"]), 3)
             self.assertGreaterEqual(len(data["dealer_hand"]["cards"]), 2)
+
+    def test_roulette_rejects_invalid_bet_value(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        response = self.client.post("/api/roulette/spin", json={
+            "bet_type": "color", "bet_value": "green", "amount": 25,
+        })
+
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("error", response.get_json()["status"])
+
+    def test_roulette_win_returns_correct_payout(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        with patch("backend.app._wheel.spin", return_value=7):
+            response = self.client.post("/api/roulette/spin", json={
+                "bet_type": "color", "bet_value": "red", "amount": 25,
+            })
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(data["won"])
+        self.assertEqual(25, data["payout"])
+        self.assertEqual(1025, data["chips"])
+
+    def test_slots_three_sevens_payout(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        with patch("backend.app._slot_machine.spin", return_value=["seven"] * 3):
+            response = self.client.post("/api/slots/spin", json={"amount": 25})
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("three_match", data["result"])
+        self.assertEqual(625, data["payout"])
+        self.assertEqual(1625, data["chips"])
+
+    def test_slots_rejects_bet_larger_than_available_chips(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        with self.client.session_transaction() as session:
+            session["chips"] = 10
+
+        response = self.client.post("/api/slots/spin", json={"amount": 25})
+        self.assertEqual(400, response.status_code)
+        self.assertEqual("error", response.get_json()["status"])
 
 
 if __name__ == "__main__":

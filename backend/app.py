@@ -1,13 +1,14 @@
 import os
 import sys
 
-from flask import Flask, session, request, jsonify
+from flask import Flask, session, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Put project root on sys.path so package imports resolve when running
 # `python app.py` from inside the `backend/` folder.
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
+FRONTEND_BUILD_DIR = os.path.join(PROJECT_ROOT, "frontend", "build")
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
@@ -22,11 +23,11 @@ from backend.game.roulette.rules import Rules as RouletteRules
 from backend.game.slots.machine import SlotMachine
 from backend.game.slots.rules import Rules as SlotRules
 from backend.ai.roulette_advise import RouletteAdvisor
-from database.db import create_tables
-from database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats,  get_all_slots_stats
+from backend.database.db import create_tables
+from backend.database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats, get_all_slots_stats
 
-app = Flask(__name__)
-app.secret_key = "ace-dev-secret-key"
+app = Flask(__name__, static_folder=None)
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or os.urandom(32)
 CORS(app, supports_credentials=True)
 
 # Create database tables on startup if they don't exist
@@ -203,7 +204,11 @@ def new_game():
     """
     data = request.get_json(silent=True) or {}
     name = data.get("name", "Player")
+    if not isinstance(name, str):
+        return jsonify({"status": "error", "message": "Player name must be text."}), 400
     name = name.strip().lower()
+    if not name:
+        return jsonify({"status": "error", "message": "Player name cannot be empty."}), 400
 
     tutorial_mode = data.get("tutorial", False)
     restore_session = data.get("restore_session", False)
@@ -271,7 +276,7 @@ def deal():
     bet   = data.get("bet", 0)
     chips = session.get("chips", Player.STARTING_CHIPS)
 
-    if bet <= 0 or bet > chips:
+    if isinstance(bet, bool) or not isinstance(bet, int) or bet <= 0 or bet > chips:
         return jsonify({ "status": "error", "message": "Invalid bet amount." }), 400
 
     deck        = Deck()
@@ -1207,6 +1212,21 @@ def _outcome_message(result):
         "lose":      "You lose.",
     }
     return messages.get(result, "Round over.")
+
+
+# ------------------------------------------------------------------
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    """Serve the React production build while leaving API routes to Flask."""
+    if path.startswith("api/"):
+        return jsonify({"status": "error", "message": "Endpoint not found."}), 404
+    if not os.path.isdir(FRONTEND_BUILD_DIR):
+        return jsonify({"status": "error", "message": "Frontend build not found."}), 503
+    if path and os.path.isfile(os.path.join(FRONTEND_BUILD_DIR, path)):
+        return send_from_directory(FRONTEND_BUILD_DIR, path)
+    return send_from_directory(FRONTEND_BUILD_DIR, "index.html")
 
 
 # ------------------------------------------------------------------

@@ -63,11 +63,21 @@ The app currently provides:
    cd ..
    ```
 
+5. Configure local environment variables (optional for local play; required for persistent stats)
+
+   Create a `.env` file in the project root:
+   ```env
+   DATABASE_URL=your_neon_postgresql_connection_string
+   FLASK_SECRET_KEY=a_long_random_secret
+   ```
+
+   Never commit `.env`. It is already excluded by `.gitignore`.
+
 ## Running the App
 
 Start the backend from the project root:
 ```bash
-python backend/app.py
+python -m backend.app
 ```
 
 In a second terminal, start the frontend:
@@ -77,6 +87,24 @@ npm start
 ```
 
 The frontend is typically served at http://localhost:3000, and the Flask API runs on http://127.0.0.1:5000.
+
+## Deploying to Render
+
+The production deployment is a single Flask web service. Flask serves the React production build, so the Create React App development proxy is only used locally.
+
+Create a Render Web Service connected to this repository and use:
+
+```text
+Build command: pip install -r backend/requirements.txt && cd frontend && npm ci && npm run build
+Start command: gunicorn backend.app:app
+```
+
+Add these environment variables in the Render dashboard:
+
+- `DATABASE_URL`: Neon PostgreSQL connection string
+- `FLASK_SECRET_KEY`: a long, random secret used to sign Flask sessions
+
+Do not add a production `.env` file to the repository. Render provides these values at runtime.
 
 ## Project Structure
 
@@ -145,17 +173,16 @@ senior_project_2026_ACE/
 |------|------------|
 | Backend | Python, Flask |
 | API | Flask-CORS, JSON endpoints |
-| Database | SQLite-based persistence |
+| Database | Neon PostgreSQL |
 | Frontend | React, Create React App-style React app |
 | Package Management | pip, npm |
 
 ## Testing
 
-The backend includes tests for app and database behavior. To run the suite:
+The backend includes deterministic API regression tests. Run them from the project root:
 
 ```bash
-cd backend
-python -m pytest
+python -m unittest backend.test_app
 ```
 
 ## Contributing
