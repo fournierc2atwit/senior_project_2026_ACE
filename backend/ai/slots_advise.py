@@ -270,9 +270,10 @@ class SlotsAdvisor:
                 "explanation": (
                     f"Two cherries — ${payout:,} back. This is the machine's most "
                     f"common payout by far ({_pct(two_cherry_probability())} of spins) "
-                    f"and it's the reason slots feel generous: you get frequent small "
-                    f"returns that are usually smaller than what you staked to get "
-                    f"them. Over time it still averages out to {_pct(rtp())}."
+                    f"and it's the reason slots feel generous: you get frequent, "
+                    f"comparatively small wins. Even so, they are not frequent enough "
+                    f"to overcome the losing spins, so the long-run return remains "
+                    f"{_pct(rtp())}."
                 ),
                 "teaching_moment": "small_win",
             }

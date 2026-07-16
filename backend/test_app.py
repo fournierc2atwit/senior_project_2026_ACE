@@ -205,6 +205,17 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual("three_match", data["result"])
         self.assertEqual(625, data["payout"])
         self.assertEqual(1625, data["chips"])
+        self.assertEqual("hot_hand", data["advice_evaluation"]["teaching_moment"])
+
+    def test_slots_advice_returns_machine_odds(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        response = self.client.post("/api/slots/advice", json={"amount": 25})
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("success", data["status"])
+        self.assertEqual(83.84, data["advice"]["rtp_percent"])
+        self.assertIn("explanation", data["advice"])
 
     def test_slots_rejects_bet_larger_than_available_chips(self):
         self.client.post("/api/new-game", json={"tutorial": True})

@@ -34,6 +34,8 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
   const [result, setResult]     = useState(null);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [advice, setAdvice]     = useState(null);
+  const [adviceLoading, setAdviceLoading] = useState(false);
   const mountedRef               = useRef(true);
   const spinTimersRef            = useRef([]);
 
@@ -49,9 +51,27 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
 
   const clearError = () => setError("");
 
+  useEffect(() => {
+    setAdvice(null);
+  }, [amount]);
+
   const handleMenu = async () => {
     try { await axios.post("/api/save"); } catch {}
     onNavigate("menu");
+  };
+
+  const handleAdvice = async () => {
+    setAdviceLoading(true);
+    clearError();
+    try {
+      const res = await axios.post("/api/slots/advice", { amount });
+      if (mountedRef.current) setAdvice(res.data.advice);
+    } catch (err) {
+      if (!mountedRef.current) return;
+      setError(err.response?.data?.message || "Advice is unavailable right now.");
+    } finally {
+      if (mountedRef.current) setAdviceLoading(false);
+    }
   };
 
   const handleSpin = async () => {
@@ -89,6 +109,7 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
       const resultTimer = setTimeout(() => {
         if (!mountedRef.current) return;
         setResult(res.data);
+        setAdvice(res.data.advice_evaluation);
         setChips(res.data.chips);
         if (onSetChips) onSetChips(res.data.chips);
         setSpinning(false);
@@ -165,6 +186,19 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
 
         {error && <div className="error-banner">{error}</div>}
 
+        {advice && (
+          <div className="sm-advice" aria-live="polite">
+            <p className="sm-advice-title">ACE Insight</p>
+            <p>{advice.explanation}</p>
+            {advice.lesson && <p>{advice.lesson}</p>}
+            {advice.warnings?.map((warning) => (
+              <p key={warning.code} className={`sm-advice-warning sm-advice-${warning.severity}`}>
+                {warning.message}
+              </p>
+            ))}
+          </div>
+        )}
+
         {/* ── Bet tier selector ── */}
         <div className="sm-bet-row">
           {BET_TIERS.map((tier) => (
@@ -179,13 +213,22 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
           ))}
         </div>
 
-        <button
-          className={`btn-deal ${!spinning ? "btn-deal-active" : ""}`}
-          onClick={handleSpin}
-          disabled={loading || amount > chips}
-        >
-          {spinning ? "Spinning..." : "Spin"}
-        </button>
+        <div className="sm-action-row">
+          <button
+            className="sm-advice-btn"
+            onClick={handleAdvice}
+            disabled={spinning || adviceLoading || amount > chips}
+          >
+            {adviceLoading ? "Thinking..." : "Ask ACE"}
+          </button>
+          <button
+            className={`btn-deal ${!spinning ? "btn-deal-active" : ""}`}
+            onClick={handleSpin}
+            disabled={loading || amount > chips}
+          >
+            {spinning ? "Spinning..." : "Spin"}
+          </button>
+        </div>
 
         {amount > chips && (
           <p className="sm-insufficient">Not enough chips for this bet.</p>

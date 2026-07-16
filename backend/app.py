@@ -23,6 +23,7 @@ from backend.game.roulette.rules import Rules as RouletteRules
 from backend.game.slots.machine import SlotMachine
 from backend.game.slots.rules import Rules as SlotRules
 from backend.ai.roulette_advise import RouletteAdvisor
+from backend.ai.slots_advise import SlotsAdvisor
 from backend.database.db import create_tables
 from backend.database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats, get_all_slots_stats
 
@@ -42,6 +43,7 @@ _wheel = Wheel()
 # Slot machine instance — stateless, created once at startup
 _slot_machine = SlotMachine()
 _roulette_advisor = RouletteAdvisor()
+_slots_advisor = SlotsAdvisor()
 
 # ------------------------------------------------------------------
 # Helpers
@@ -725,6 +727,24 @@ def roulette_stats():
 # Routes — Slots
 # ------------------------------------------------------------------
 
+@app.route("/api/slots/advice", methods=["POST"])
+def slots_advice():
+    """Explain the selected Slots wager before the player spins."""
+    data = request.get_json() or {}
+    amount = data.get("amount", 0)
+    chips = session.get("chips", Player.STARTING_CHIPS)
+
+    try:
+        amount = int(amount)
+        SlotRules.validate_bet(amount, chips)
+    except (TypeError, ValueError) as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+    advice = _slots_advisor.recommend(
+        chips, amount, session.get("slots_history", [])
+    )
+    return jsonify({"status": "success", "advice": advice})
+
 @app.route("/api/slots/spin", methods=["POST"])
 def slots_spin():
     """
@@ -767,6 +787,19 @@ def slots_spin():
     # Spin the slots and calculate result
     result = SlotRules.resolve_spin(_slot_machine, amount)
 
+    history = session.get("slots_history", [])
+    advice_evaluation = _slots_advisor.evaluate(
+        {**result, "amount": amount}, history
+    )
+    history.append({
+        "reels": result["reels"],
+        "won": result["won"],
+        "amount": amount,
+        "payout": result["payout"],
+        "result": result["result"],
+    })
+    session["slots_history"] = history[-20:]
+
     # Add winnings/return back to chips
     new_chips = session["chips"] + result["total_return"]
     session["chips"] = new_chips
@@ -795,6 +828,7 @@ def slots_spin():
         "total_return": result["total_return"],
         "chips": new_chips,
         "message": result["message"],
+        "advice_evaluation": advice_evaluation,
     })
 
 @app.route("/api/slots/stats", methods=["GET"])
