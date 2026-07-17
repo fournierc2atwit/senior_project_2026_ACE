@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import Hand from "./Hand";
 import Hud from "./Hud";
@@ -26,12 +26,23 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [activeHandIndex, setActiveHandIndex] = useState(0);
   const [canSplit, setCanSplit]               = useState(false);
   const [handNote, setHandNote]               = useState("");
+  const [deckReshuffled, setDeckReshuffled]   = useState(false);
+  const reshuffleTimerRef                     = useRef(null);
 
   useEffect(() => {
     if (onSetChips) onSetChips(chips);
   }, [chips, onSetChips]);
 
+  useEffect(() => () => clearTimeout(reshuffleTimerRef.current), []);
+
   const clearError = () => setError("");
+
+  const showReshuffleNotice = (data) => {
+    if (!data.deck_reshuffled) return;
+    clearTimeout(reshuffleTimerRef.current);
+    setDeckReshuffled(true);
+    reshuffleTimerRef.current = setTimeout(() => setDeckReshuffled(false), 2500);
+  };
 
   const resultMessageFor = (data) => {
     if (data.player_hand?.blackjack) {
@@ -60,6 +71,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
+      showReshuffleNotice(res.data);
 
       if ("outcome" in res.data) {
         setOutcome(res.data.outcome);
@@ -90,6 +102,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
 
   const processActionResponse = (res) => {
     setChips(res.data.chips);
+    showReshuffleNotice(res.data);
 
     if ("outcome" in res.data) {
       if (res.data.player_hand) setPlayerHand(res.data.player_hand);
@@ -141,6 +154,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setActiveHandIndex(res.data.active_hand_index ?? 0);
       setCanSplit(res.data.can_split ?? false);
       setHandNote("Hand split! Playing Hand 1 first.");
+      showReshuffleNotice(res.data);
       fetchHint();
     } catch { setError("Unable to split. Check your chips and try again."); }
     setLoading(false);
@@ -250,6 +264,10 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       )}
 
       {error && <div className="error-banner">{error}</div>}
+
+      {deckReshuffled && (
+        <div className="deck-reshuffle-banner" role="status">Reshuffling Deck...</div>
+      )}
 
       {/* ── Controls ── */}
       <div className="table-controls">

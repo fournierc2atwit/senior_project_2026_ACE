@@ -24,7 +24,8 @@
   font-family: 'Crimson Pro', Georgia, serif;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .table-felt {
@@ -262,6 +263,22 @@
   color: var(--gold-light);
   font-size: 0.9rem;
   text-align: center;
+}
+
+.deck-reshuffle-banner {
+  position: relative;
+  z-index: 5;
+  background: rgba(26, 77, 46, 0.9);
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  color: var(--gold-light);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  margin: 0.25rem auto;
+  padding: 0.45rem 1rem;
+  text-align: center;
+  width: fit-content;
 }
 
 /* ── Error banner ──────────────────────────────────────────────── */

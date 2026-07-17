@@ -16,6 +16,7 @@ class Deck:
     def __init__(self):
         self.cards = []
         self.dealt = []
+        self.reshuffled = False
         self.build()
         self.shuffle()
 
@@ -35,6 +36,7 @@ class Deck:
         if len(self.cards) <= self.RESHUFFLE_THRESHOLD:
             print("Reshuffling...")
             self.shuffle()
+            self.reshuffled = True
 
         card = self.cards.pop()
         self.dealt.append(card)

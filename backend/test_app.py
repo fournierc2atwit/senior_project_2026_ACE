@@ -11,6 +11,7 @@ def scripted_deck(*deal_order):
         def __init__(self):
             self.cards = [Card("Clubs", "2") for _ in range(20)] + list(reversed(deal_order))
             self.dealt = []
+            self.reshuffled = False
 
         def deal(self):
             card = self.cards.pop()
@@ -225,6 +226,19 @@ class BackendApiTestCase(unittest.TestCase):
         response = self.client.post("/api/slots/spin", json={"amount": 25})
         self.assertEqual(400, response.status_code)
         self.assertEqual("error", response.get_json()["status"])
+
+    def test_repeated_saves_do_not_double_count_a_bankruptcy(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        with self.client.session_transaction() as session:
+            session["tutorial"] = False
+            session["chips"] = 0
+            session["bankrupts"] = 0
+
+        self.client.post("/api/save")
+        self.client.post("/api/save")
+
+        with self.client.session_transaction() as session:
+            self.assertEqual(1, session["bankrupts"])
 
 
 if __name__ == "__main__":

@@ -34,7 +34,7 @@ CORS(app, supports_credentials=True)
 # Create database tables on startup if they don't exist
 try:
     create_tables()
-except ValueError as exc:
+except Exception as exc:
     print(f"Database unavailable; stats persistence disabled: {exc}")
 
 # Roulette wheel instance — stateless, created once at startup
@@ -186,6 +186,7 @@ def complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck,
         "message":     message,
         "chips":       session.get("chips"),
         "bankrupt":    bankrupt,
+        "deck_reshuffled": deck.reshuffled,
     }
     if player_hand is not None:
         response["player_hand"] = serialize_hand(player_hand)
@@ -312,6 +313,7 @@ def deal():
             "outcome":     outcome,
             "message":     message,
             "bankrupt":    bankrupt,
+            "deck_reshuffled": deck.reshuffled,
         })
 
     session["deck"]          = save_deck(deck)
@@ -327,6 +329,7 @@ def deal():
         "hand_count":     1,
         "active_hand_index": 0,
         "can_split":      player_hand.is_pair(),
+        "deck_reshuffled": deck.reshuffled,
     })
 
 
@@ -361,6 +364,7 @@ def hit():
                 "can_split":        False,
                 "bust":             True,
                 "chips":            session.get("chips"),
+                "deck_reshuffled":  deck.reshuffled,
             })
 
         dealer_hand = load_hand(session["dealer_hand"])
@@ -379,6 +383,7 @@ def hit():
         "can_split":        False,
         "bust":             False,
         "chips":            session.get("chips"),
+        "deck_reshuffled":  deck.reshuffled,
     })
 
 
@@ -408,6 +413,7 @@ def stand():
             "active_hand_index": next_index,
             "can_split":        False,
             "chips":            session.get("chips"),
+            "deck_reshuffled":  deck.reshuffled,
         })
 
     dealer_hand = load_hand(session["dealer_hand"])
@@ -455,6 +461,7 @@ def double():
             "active_hand_index": next_index,
             "can_split":        False,
             "chips":            session.get("chips"),
+            "deck_reshuffled":  deck.reshuffled,
         })
 
     dealer_hand = load_hand(session["dealer_hand"])
@@ -501,6 +508,7 @@ def split():
         "active_hand_index": 0,
         "can_split":        False,
         "chips":            session.get("chips"),
+        "deck_reshuffled":  deck.reshuffled,
     })
 
 
@@ -1234,9 +1242,13 @@ def _persist_stats():
     chips = session.get("chips", Player.STARTING_CHIPS)
     bankrupts = session.get("bankrupts", 0)
     if chips <= 0:
-        bankrupts += 1
+        if not session.get("bankruptcy_recorded", False):
+            bankrupts += 1
+            session["bankruptcy_recorded"] = True
         chips = 0
         session.update({"chips": chips, "bankrupts": bankrupts})
+    else:
+        session.pop("bankruptcy_recorded", None)
     save_stats(session.get("name", "Player"), chips, session.get("wins", 0), session.get("losses", 0), session.get("pushes", 0), bankrupts)
 
 def _outcome_message(result):
