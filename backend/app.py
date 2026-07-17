@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 
 from flask import Flask, session, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -24,6 +25,8 @@ from backend.game.slots.machine import SlotMachine
 from backend.game.slots.rules import Rules as SlotRules
 from backend.ai.roulette_advise import RouletteAdvisor
 from backend.ai.slots_advise import SlotsAdvisor
+from backend.ai.counting import CardCounter
+from backend.ai.count_advise import CountAdvisor
 from backend.database.db import create_tables
 from backend.database.stats import save_stats, get_player_stats, get_all_player_stats, save_slot_spin, get_slots_stats, save_roulette_spin, get_roulette_stats, get_all_roulette_stats, get_all_slots_stats
 
@@ -44,6 +47,8 @@ _wheel = Wheel()
 _slot_machine = SlotMachine()
 _roulette_advisor = RouletteAdvisor()
 _slots_advisor = SlotsAdvisor()
+_count_advisor = CountAdvisor()
+_blackjack_shoes = {}
 
 # ------------------------------------------------------------------
 # Helpers
@@ -87,6 +92,35 @@ def save_deck(deck):
 
 def save_hand(hand):
     return [{"suit": c.suit, "rank": c.rank} for c in hand.cards]
+
+def _get_shoe():
+    """Return the session's in-memory six-deck shoe and Hi-Lo counter."""
+    shoe_id = session.get("shoe_id")
+    if not shoe_id or shoe_id not in _blackjack_shoes:
+        shoe_id = uuid.uuid4().hex
+        session["shoe_id"] = shoe_id
+        _blackjack_shoes[shoe_id] = {
+            "deck": Deck(num_decks=6),
+            "counter": CardCounter(num_decks=6),
+            "count_reset": False,
+        }
+    return _blackjack_shoes[shoe_id]
+
+def _begin_shoe_turn():
+    shoe = _get_shoe()
+    shoe["deck"].begin_turn()
+    shoe["count_reset"] = False
+    return shoe
+
+def _count_cards(shoe, cards):
+    """Record newly visible cards, resetting the count if the shoe reshuffled."""
+    if shoe["deck"].reshuffled and not shoe["count_reset"]:
+        shoe["counter"].reset()
+        shoe["count_reset"] = True
+    shoe["counter"].count_cards(cards)
+
+def _count_status():
+    return _get_shoe()["counter"].status()
 
 def save_player_hands(hands):
     return [save_hand(hand) for hand in hands]
@@ -137,7 +171,10 @@ def apply_hand_outcome(result, bet):
     session["chips"] = chips
 
 def resolve_round(player_hands, dealer_hand, hand_bets, deck):
-    Rules.run_dealer(dealer_hand, deck)
+    # A dealer turn is unnecessary once every hand has already resolved by busting
+    # or a natural Blackjack.
+    if any(not hand.is_bust() and not hand.is_blackjack() for hand in player_hands):
+        Rules.run_dealer(dealer_hand, deck)
     results = []
     for hand, bet in zip(player_hands, hand_bets):
         result = Rules.determine_winner(hand, dealer_hand)
@@ -182,6 +219,7 @@ def complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck,
                              player_hand=None, bust=None):
     """Resolve a completed Blackjack round and build its shared response."""
     results = resolve_round(player_hands, dealer_hand, hand_bets, deck)
+    _count_cards(_get_shoe(), dealer_hand.cards[1:])
     message = split_outcome_message(results)
     _persist_stats()
     bankrupt = session.get("chips", 0) <= 0
@@ -199,6 +237,7 @@ def complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck,
         "chips":       session.get("chips"),
         "bankrupt":    bankrupt,
         "deck_reshuffled": deck.reshuffled,
+        "count_status": _count_status(),
     }
     if player_hand is not None:
         response["player_hand"] = serialize_hand(player_hand)
@@ -301,7 +340,8 @@ def deal():
     if isinstance(bet, bool) or not isinstance(bet, int) or bet <= 0 or bet > chips:
         return jsonify({ "status": "error", "message": "Invalid bet amount." }), 400
 
-    deck        = Deck()
+    shoe        = _begin_shoe_turn()
+    deck        = shoe["deck"]
     player_hand = Hand()
     dealer_hand = Hand()
 
@@ -309,6 +349,7 @@ def deal():
     dealer_hand.add_card(deck.deal())
     player_hand.add_card(deck.deal())
     dealer_hand.add_card(deck.deal())
+    _count_cards(shoe, player_hand.cards + dealer_hand.cards[:1])
 
     session["chips"] = chips - bet
 
@@ -316,6 +357,7 @@ def deal():
     # This also handles a dealer Blackjack or a Blackjack push correctly.
     if player_hand.is_blackjack() or dealer_hand.is_blackjack():
         outcome = resolve_round([player_hand], dealer_hand, [bet], deck)[0]
+        _count_cards(shoe, dealer_hand.cards[1:])
         message = _outcome_message(outcome)
         _persist_stats()
         bankrupt = session.get("chips", 0) <= 0
@@ -332,9 +374,9 @@ def deal():
             "message":     message,
             "bankrupt":    bankrupt,
             "deck_reshuffled": deck.reshuffled,
+            "count_status": _count_status(),
         })
 
-    session["deck"]          = save_deck(deck)
     persist_player_hands([player_hand], [bet], active_index=0)
     session["dealer_hand"] = save_hand(dealer_hand)
 
@@ -348,6 +390,7 @@ def deal():
         "active_hand_index": 0,
         "can_split":      player_hand.is_pair(),
         "deck_reshuffled": deck.reshuffled,
+        "count_status": _count_status(),
     })
 
 
@@ -357,7 +400,8 @@ def hit():
     if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    deck = load_deck(session["deck"])
+    shoe = _begin_shoe_turn()
+    deck = shoe["deck"]
     player_hands = get_player_hands()
     hand_bets = session.get("hand_bets", [session.get("bet", 0)])
     statuses = get_hand_statuses()
@@ -365,6 +409,7 @@ def hit():
 
     player_hand = player_hands[active_index]
     player_hand.add_card(deck.deal())
+    _count_cards(shoe, [player_hand.cards[-1]])
 
     if player_hand.is_bust():
         statuses[active_index] = "bust"
@@ -373,7 +418,6 @@ def hit():
         if next_index is not None:
             statuses[next_index] = "active"
             persist_player_hands(player_hands, hand_bets, next_index, statuses)
-            session["deck"] = save_deck(deck)
             return jsonify({
                 "status":           "success",
                 "player_hand":      serialize_hand(player_hands[next_index]),
@@ -391,8 +435,6 @@ def hit():
         )
 
     persist_player_hands(player_hands, hand_bets, active_index, statuses)
-    session["deck"] = save_deck(deck)
-
     return jsonify({
         "status":           "success",
         "player_hand":      serialize_hand(player_hand),
@@ -411,7 +453,8 @@ def stand():
     if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    deck = load_deck(session["deck"])
+    shoe = _begin_shoe_turn()
+    deck = shoe["deck"]
     player_hands = get_player_hands()
     hand_bets = session.get("hand_bets", [session.get("bet", 0)])
     statuses = get_hand_statuses()
@@ -423,7 +466,6 @@ def stand():
     if next_index is not None:
         statuses[next_index] = "active"
         persist_player_hands(player_hands, hand_bets, next_index, statuses)
-        session["deck"] = save_deck(deck)
         return jsonify({
             "status":           "success",
             "player_hand":      serialize_hand(player_hands[next_index]),
@@ -444,7 +486,8 @@ def double():
     if "player_hands" not in session and "player_hand" not in session:
         return jsonify({ "status": "error", "message": "No active round." }), 400
 
-    deck = load_deck(session["deck"])
+    shoe = _begin_shoe_turn()
+    deck = shoe["deck"]
     player_hands = get_player_hands()
     hand_bets = session.get("hand_bets", [session.get("bet", 0)])
     statuses = get_hand_statuses()
@@ -462,6 +505,7 @@ def double():
     hand_bets[active_index] = current_bet * 2
 
     player_hand.add_card(deck.deal())
+    _count_cards(shoe, [player_hand.cards[-1]])
     if player_hand.is_bust():
         statuses[active_index] = "bust"
     else:
@@ -471,7 +515,6 @@ def double():
     if next_index is not None:
         statuses[next_index] = "active"
         persist_player_hands(player_hands, hand_bets, next_index, statuses)
-        session["deck"] = save_deck(deck)
         return jsonify({
             "status":           "success",
             "player_hand":      serialize_hand(player_hands[next_index]),
@@ -508,17 +551,17 @@ def split():
     if bet_amount > chips:
         return jsonify({ "status": "error", "message": "Not enough chips to split." }), 400
 
-    deck = load_deck(session["deck"])
+    shoe = _begin_shoe_turn()
+    deck = shoe["deck"]
     first_card, second_card = player_hand.cards
     hand1 = Hand(); hand1.add_card(first_card)
     hand2 = Hand(); hand2.add_card(second_card)
     hand1.add_card(deck.deal())
     hand2.add_card(deck.deal())
+    _count_cards(shoe, [hand1.cards[-1], hand2.cards[-1]])
 
     session["chips"] = chips - bet_amount
     persist_player_hands([hand1, hand2], [bet_amount, bet_amount], active_index=0, statuses=["active", "pending"])
-    session["deck"] = save_deck(deck)
-
     return jsonify({
         "status":           "success",
         "player_hand":      serialize_hand(hand1),
@@ -567,6 +610,39 @@ def hint():
         "action":      rec["action_name"],
         "explanation": rec["reason"],
         "raw_action":  rec["action"],
+    })
+
+
+@app.route("/api/count-advice", methods=["GET"])
+def count_advice():
+    """Return Hi-Lo count status and count-aware Blackjack guidance."""
+    if "dealer_hand" not in session:
+        return jsonify({"status": "error", "message": "No active round."}), 400
+
+    player_hands = get_player_hands()
+    if not player_hands:
+        return jsonify({"status": "error", "message": "No active round."}), 400
+
+    active_index = get_active_hand_index()
+    player_hand = player_hands[active_index]
+    dealer_upcard = load_hand(session["dealer_hand"]).cards[0]
+    count = _count_status()
+    recommendation = _count_advisor.recommend(
+        player_hand,
+        dealer_upcard,
+        count["true_count"],
+        can_double=player_hand.card_count() == 2,
+        can_split=player_hand.is_pair(),
+    )
+    betting = _count_advisor.betting_advice(count["true_count"])
+
+    return jsonify({
+        "status": "success",
+        "count": count,
+        "action": recommendation["action_name"],
+        "explanation": recommendation["reason"],
+        "is_deviation": recommendation["is_deviation"],
+        "betting": betting,
     })
 
 

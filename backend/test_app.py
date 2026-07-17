@@ -9,7 +9,8 @@ from backend.game.blackjack.deck import Deck
 def scripted_deck(*deal_order):
     """Create a deck class that deals the supplied cards in order."""
     class ScriptedDeck:
-        def __init__(self):
+        def __init__(self, num_decks=1):
+            self.num_decks = num_decks
             self.cards = [Card("Clubs", "2") for _ in range(20)] + list(reversed(deal_order))
             self.dealt = []
             self.reshuffled = False
@@ -18,6 +19,9 @@ def scripted_deck(*deal_order):
             card = self.cards.pop()
             self.dealt.append(card)
             return card
+
+        def begin_turn(self):
+            self.reshuffled = False
 
     return ScriptedDeck
 
@@ -125,6 +129,40 @@ class BackendApiTestCase(unittest.TestCase):
             self.assertEqual("success", stand_data["status"])
             self.assertIn(stand_data["outcome"], ["win", "lose", "push", "blackjack"])
             self.assertIsInstance(stand_data["chips"], int)
+
+    def test_dealer_does_not_draw_after_player_busts(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "10"), Card("Hearts", "6"),
+            Card("Diamonds", "9"), Card("Clubs", "10"),
+            Card("Spades", "5"), Card("Hearts", "2"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            self.client.post("/api/deal", json={"bet": 50})
+            response = self.client.post("/api/hit")
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(data["bust"])
+        self.assertEqual(2, len(data["dealer_hand"]["cards"]))
+
+    def test_count_advice_reports_live_six_deck_shoe_status(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "10"), Card("Hearts", "7"),
+            Card("Diamonds", "8"), Card("Clubs", "9"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            self.client.post("/api/deal", json={"bet": 50})
+            response = self.client.get("/api/count-advice")
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("success", data["status"])
+        self.assertEqual(3, data["count"]["cards_seen"])
+        self.assertIn("action", data)
 
     def test_player_natural_blackjack_resolves_immediately(self):
         self.client.post("/api/new-game", json={"tutorial": True})

@@ -11,9 +11,10 @@ class Deck:
     - Automatically reshuffle when the deck runs low on cards
     """
 
-    RESHUFFLE_THRESHOLD = 15  # When to reshuffle the deck
+    RESHUFFLE_THRESHOLD = 15
 
-    def __init__(self):
+    def __init__(self, num_decks=1):
+        self.num_decks = num_decks
         self.cards = []
         self.dealt = []
         self.reshuffled = False
@@ -23,6 +24,7 @@ class Deck:
     def build(self):
         self.cards = [
             Card(suit,rank)
+            for _ in range(self.num_decks)
             for suit in Card.SUITS
             for rank in Card.RANKS
         ]
@@ -33,7 +35,8 @@ class Deck:
         random.shuffle(self.cards)
 
     def deal(self):
-        if len(self.cards) <= self.RESHUFFLE_THRESHOLD:
+        threshold = 52 if self.num_decks > 1 else self.RESHUFFLE_THRESHOLD
+        if len(self.cards) <= threshold:
             print("Reshuffling...")
             self.shuffle()
             self.reshuffled = True
@@ -41,6 +44,10 @@ class Deck:
         card = self.cards.pop()
         self.dealt.append(card)
         return card
+
+    def begin_turn(self):
+        """Clear the one-turn reshuffle signal before the next game action."""
+        self.reshuffled = False
     
     def cards_remaining(self):
         return len(self.cards)

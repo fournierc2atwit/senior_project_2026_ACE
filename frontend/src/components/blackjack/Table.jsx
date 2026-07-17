@@ -20,6 +20,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [outcome, setOutcome]                 = useState(null);
   const [message, setMessage]                 = useState("");
   const [hint, setHint]                       = useState(null);
+  const [countAdvice, setCountAdvice]         = useState(null);
   const [error, setError]                     = useState("");
   const [loading, setLoading]                 = useState(false);
   const [handCount, setHandCount]             = useState(1);
@@ -109,10 +110,19 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
 
   const fetchHint = async () => {
     try {
-      const res = await axios.get("/api/hint");
-      if (mountedRef.current) setHint(res.data);
+      const [hintResponse, countResponse] = await Promise.all([
+        axios.get("/api/hint"),
+        axios.get("/api/count-advice"),
+      ]);
+      if (mountedRef.current) {
+        setHint(hintResponse.data);
+        setCountAdvice(countResponse.data);
+      }
     } catch {
-      if (mountedRef.current) setHint(null);
+      if (mountedRef.current) {
+        setHint(null);
+        setCountAdvice(null);
+      }
     }
   };
 
@@ -303,6 +313,16 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
           <span className="hint-text">
             <strong>{hint.action}</strong> — {hint.explanation}
           </span>
+        </div>
+      )}
+
+      {countAdvice && phase === "playing" && (
+        <div className="count-banner">
+          <span className="count-title">Hi-Lo Count</span>
+          <span>RC {countAdvice.count.running_count >= 0 ? "+" : ""}{countAdvice.count.running_count}</span>
+          <span>TC {countAdvice.count.true_count >= 0 ? "+" : ""}{countAdvice.count.true_count}</span>
+          <span>{countAdvice.count.decks_remaining} decks left</span>
+          <span className="count-action">Count says: {countAdvice.action}</span>
         </div>
       )}
 
