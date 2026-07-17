@@ -324,6 +324,7 @@ def new_game():
         "name":     player_name,
         "chips":    chips,
         "returning": returning,
+        "count_status": CardCounter(num_decks=6).status(),
     })
 
 
@@ -643,6 +644,17 @@ def count_advice():
         "explanation": recommendation["reason"],
         "is_deviation": recommendation["is_deviation"],
         "betting": betting,
+    })
+
+
+@app.route("/api/count-status", methods=["GET"])
+def count_status():
+    """Return the current shoe count, including between rounds."""
+    count = _count_status()
+    return jsonify({
+        "status": "success",
+        "count": count,
+        "betting": _count_advisor.betting_advice(count["true_count"]),
     })
 
 

@@ -38,6 +38,16 @@ class BackendApiTestCase(unittest.TestCase):
         data = response.get_json()
         self.assertEqual("success", data["status"])
         self.assertEqual(1000, data["chips"])
+        self.assertEqual(0, data["count_status"]["running_count"])
+
+    def test_count_status_is_available_between_rounds(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        response = self.client.get("/api/count-status")
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, data["count"]["running_count"])
+        self.assertEqual(6.0, data["count"]["decks_remaining"])
 
     def test_new_game_initializes_an_unknown_player(self):
         with patch("backend.app.get_player_stats", return_value=None):

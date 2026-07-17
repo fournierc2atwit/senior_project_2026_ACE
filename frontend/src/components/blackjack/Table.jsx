@@ -21,6 +21,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [message, setMessage]                 = useState("");
   const [hint, setHint]                       = useState(null);
   const [countAdvice, setCountAdvice]         = useState(null);
+  const [countStatus, setCountStatus]         = useState(null);
   const [error, setError]                     = useState("");
   const [loading, setLoading]                 = useState(false);
   const [handCount, setHandCount]             = useState(1);
@@ -39,6 +40,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
 
   useEffect(() => {
     mountedRef.current = true;
+    fetchCountStatus();
     return () => {
       mountedRef.current = false;
       clearTimeout(reshuffleTimerRef.current);
@@ -117,6 +119,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       if (mountedRef.current) {
         setHint(hintResponse.data);
         setCountAdvice(countResponse.data);
+        setCountStatus(countResponse.data.count);
       }
     } catch {
       if (mountedRef.current) {
@@ -126,8 +129,18 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     }
   };
 
+  const fetchCountStatus = async () => {
+    try {
+      const res = await axios.get("/api/count-status");
+      if (mountedRef.current) setCountStatus(res.data.count);
+    } catch {
+      if (mountedRef.current) setCountStatus(null);
+    }
+  };
+
   const processActionResponse = (res) => {
     setChips(res.data.chips);
+    if (res.data.count_status) setCountStatus(res.data.count_status);
     showReshuffleNotice(res.data);
 
     if ("outcome" in res.data) {
@@ -180,6 +193,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       if (!mountedRef.current) return;
       setPlayerHand(res.data.player_hand);
       setChips(res.data.chips);
+      if (res.data.count_status) setCountStatus(res.data.count_status);
       setHandCount(res.data.hand_count ?? 2);
       setActiveHandIndex(res.data.active_hand_index ?? 0);
       setCanSplit(res.data.can_split ?? false);
@@ -206,6 +220,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     setHandNote("");
     setCompletedHands([]);
     setCompletedHandResults([]);
+    fetchCountStatus();
     clearError();
   };
 
@@ -215,6 +230,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       const res = await axios.post("/api/new-game", { name: playerName });
       if (!mountedRef.current) return;
       setChips(res.data.chips);
+      setCountStatus(res.data.count_status ?? null);
       setBet(0);
       setOutcome(null);
       setMessage("");
@@ -317,13 +333,15 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
         </div>
       )}
 
-      {countAdvice && phase === "playing" && (
+      {countStatus && (
         <div className="count-banner">
           <span className="count-title">Hi-Lo Count</span>
-          <span>RC {countAdvice.count.running_count >= 0 ? "+" : ""}{countAdvice.count.running_count}</span>
-          <span>TC {countAdvice.count.true_count >= 0 ? "+" : ""}{countAdvice.count.true_count}</span>
-          <span>{countAdvice.count.decks_remaining} decks left</span>
-          <span className="count-action">Count says: {countAdvice.action}</span>
+          <span>RC {countStatus.running_count >= 0 ? "+" : ""}{countStatus.running_count}</span>
+          <span>TC {countStatus.true_count >= 0 ? "+" : ""}{countStatus.true_count}</span>
+          <span>{countStatus.decks_remaining} decks left</span>
+          {countAdvice && phase === "playing" && (
+            <span className="count-action">Count says: {countAdvice.action}</span>
+          )}
         </div>
       )}
 
