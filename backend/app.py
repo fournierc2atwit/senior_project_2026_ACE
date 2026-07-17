@@ -65,15 +65,25 @@ def load_hand(card_list):
         hand.add_card(Card(c["suit"], c["rank"]))
     return hand
 
-def load_deck(card_list):
-    """Rebuild a Deck from session-stored card dicts."""
+def load_deck(deck_state):
+    """Rebuild a Deck from its session-stored remaining and dealt card piles."""
     deck = Deck()
-    deck.cards = [Card(c["suit"], c["rank"]) for c in card_list]
-    deck.dealt = []
+    if isinstance(deck_state, dict):
+        cards = deck_state.get("cards", [])
+        dealt = deck_state.get("dealt", [])
+    else:
+        # Support an active session created before dealt cards were persisted.
+        cards = deck_state
+        dealt = []
+    deck.cards = [Card(c["suit"], c["rank"]) for c in cards]
+    deck.dealt = [Card(c["suit"], c["rank"]) for c in dealt]
     return deck
 
 def save_deck(deck):
-    return [{"suit": c.suit, "rank": c.rank} for c in deck.cards]
+    return {
+        "cards": [{"suit": c.suit, "rank": c.rank} for c in deck.cards],
+        "dealt": [{"suit": c.suit, "rank": c.rank} for c in deck.dealt],
+    }
 
 def save_hand(hand):
     return [{"suit": c.suit, "rank": c.rank} for c in hand.cards]
@@ -184,6 +194,8 @@ def complete_blackjack_round(player_hands, dealer_hand, hand_bets, deck,
         "dealer_hand": serialize_hand(dealer_hand),
         "outcome":     summarize_split_outcome(results),
         "message":     message,
+        "player_hands": [serialize_hand(hand) for hand in player_hands],
+        "hand_results": results,
         "chips":       session.get("chips"),
         "bankrupt":    bankrupt,
         "deck_reshuffled": deck.reshuffled,
@@ -224,12 +236,18 @@ def new_game():
         pushes = 0
         bankrupts = 0
     elif restore_session:
-        player_name = name
-        chips = data.get("chips", Player.STARTING_CHIPS)
-        wins = data.get("wins", 0)
-        losses = data.get("losses", 0)
-        pushes = data.get("pushes", 0)
-        bankrupts = data.get("bankrupts", 0)
+        # Tutorial must restore the persisted player record, not browser-supplied
+        # bankroll or counters. This preserves stats and prevents client tampering.
+        saved = get_player_stats(name)
+        if saved:
+            player_name, chips, wins, losses, pushes, games_played, bankrupts = saved
+        else:
+            player_name = name
+            chips = Player.STARTING_CHIPS
+            wins = 0
+            losses = 0
+            pushes = 0
+            bankrupts = 0
     else:
         saved = get_player_stats(name)
 

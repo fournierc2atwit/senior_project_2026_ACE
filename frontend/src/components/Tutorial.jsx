@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import Hand from "./blackjack/Hand";
 import Hud from "./blackjack/Hud";
@@ -78,7 +78,7 @@ const STEPS = [
   },
 ];
 
-export default function Tutorial({ onNavigate, playerName, playerChips }) {
+export default function Tutorial({ onNavigate, playerName }) {
   const [step, setStep]             = useState(0);
   const [playerHand, setPlayerHand] = useState(null);
   const [dealerHand, setDealerHand] = useState(null);
@@ -89,6 +89,8 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
   const [message, setMessage]       = useState("");
   const [loading, setLoading]       = useState(false);
   const [phase, setPhase]           = useState("betting");
+  const tutorialInitRequestsRef     = useRef([]);
+  const mountedRef                  = useRef(true);
 
   const current = STEPS[step];
 
@@ -98,35 +100,37 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
       await axios.post("/api/new-game", {
         name: playerName,
         restore_session: true,
-        chips: playerChips,
       });
     } catch (err) {
       console.error("Failed to restore player session:", err);
     }
-  }, [playerName, playerChips]);
+  }, [playerName]);
 
   const handleExit = async () => {
+    await Promise.all(tutorialInitRequestsRef.current);
     await restorePlayerSession();
     onNavigate("menu");
   };
 
   useEffect(() => {
-    const initTutorial = async () => {
-      try {
-        await axios.post("/api/new-game", { name: "Tutorial", tutorial: true });
-      } catch (err) {
-        console.error("Failed to initialize tutorial session:", err);
-      }
-    };
+    const initRequest = axios
+      .post("/api/new-game", { name: "Tutorial", tutorial: true })
+      .catch((err) => console.error("Failed to initialize tutorial session:", err));
+    tutorialInitRequestsRef.current.push(initRequest);
+  }, []);
 
-    initTutorial();
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
   }, []);
 
   const fetchHint = async () => {
     try {
       const res = await axios.get("/api/hint");
-      setHint(res.data);
-    } catch { setHint(null); }
+      if (mountedRef.current) setHint(res.data);
+    } catch {
+      if (mountedRef.current) setHint(null);
+    }
   };
 
   // ── Step actions ─────────────────────────────────────────────
@@ -142,6 +146,7 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
   try {
     const amount = bet > 0 ? bet : 50;
     const res    = await axios.post("/api/deal", { bet: amount });
+    if (!mountedRef.current) return;
     setPlayerHand(res.data.player_hand);
     setDealerHand(res.data.dealer_hand);
     setChips(res.data.chips);
@@ -168,13 +173,14 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
     await fetchHint();
     setStep((s) => s + 1);
   } catch { }
-  setLoading(false);
+  if (mountedRef.current) setLoading(false);
 };
 
   const handleStand = async () => {
     setLoading(true);
     try {
       const res = await axios.post("/api/stand");
+      if (!mountedRef.current) return;
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
       setOutcome(res.data.outcome);
@@ -182,19 +188,21 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
       setPhase("result");
       setStep((s) => s + 1);
     } catch { }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   };
 
   const handleHit = async () => {
     setLoading(true);
     try {
       const res = await axios.post("/api/hit");
+      if (!mountedRef.current) return;
       setPlayerHand(res.data.player_hand);
       setChips(res.data.chips);
 
       // If bust during tutorial, silently deal a fresh hand
       if (res.data.bust) {
         const fresh = await axios.post("/api/deal", { bet: 50 });
+        if (!mountedRef.current) return;
         setPlayerHand(fresh.data.player_hand);
         setDealerHand(fresh.data.dealer_hand);
         setChips(fresh.data.chips);
@@ -206,13 +214,14 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
         return;
       }
     } catch { }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   };
 
   const handleDouble = async () => {
     setLoading(true);
     try {
       const res = await axios.post("/api/double");
+      if (!mountedRef.current) return;
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
@@ -221,7 +230,7 @@ export default function Tutorial({ onNavigate, playerName, playerChips }) {
       setPhase("result");
       setStep((s) => s + 2); // skip dealer reveal, go to result
     } catch { }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   };
 
   const outcomeColor = () => {

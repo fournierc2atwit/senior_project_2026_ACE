@@ -26,14 +26,23 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [activeHandIndex, setActiveHandIndex] = useState(0);
   const [canSplit, setCanSplit]               = useState(false);
   const [handNote, setHandNote]               = useState("");
+  const [completedHands, setCompletedHands]   = useState([]);
+  const [completedHandResults, setCompletedHandResults] = useState([]);
   const [deckReshuffled, setDeckReshuffled]   = useState(false);
   const reshuffleTimerRef                     = useRef(null);
+  const mountedRef                            = useRef(true);
 
   useEffect(() => {
     if (onSetChips) onSetChips(chips);
   }, [chips, onSetChips]);
 
-  useEffect(() => () => clearTimeout(reshuffleTimerRef.current), []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(reshuffleTimerRef.current);
+    };
+  }, []);
 
   const clearError = () => setError("");
 
@@ -68,12 +77,15 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     clearError();
     try {
       const res = await axios.post("/api/deal", { bet });
+      if (!mountedRef.current) return;
       setPlayerHand(res.data.player_hand);
       setDealerHand(res.data.dealer_hand);
       setChips(res.data.chips);
       showReshuffleNotice(res.data);
 
       if ("outcome" in res.data) {
+        setCompletedHands(res.data.player_hands ?? []);
+        setCompletedHandResults(res.data.hand_results ?? []);
         setOutcome(res.data.outcome);
         setMessage(resultMessageFor(res.data));
         setPhase("result");
@@ -89,15 +101,19 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setHandNote("");
       setPhase("playing");
       fetchHint();
-    } catch { setError("Failed to deal. Try again."); }
-    setLoading(false);
+    } catch {
+      if (mountedRef.current) setError("Failed to deal. Try again.");
+    }
+    if (mountedRef.current) setLoading(false);
   };
 
   const fetchHint = async () => {
     try {
       const res = await axios.get("/api/hint");
-      setHint(res.data);
-    } catch { setHint(null); }
+      if (mountedRef.current) setHint(res.data);
+    } catch {
+      if (mountedRef.current) setHint(null);
+    }
   };
 
   const processActionResponse = (res) => {
@@ -107,6 +123,8 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     if ("outcome" in res.data) {
       if (res.data.player_hand) setPlayerHand(res.data.player_hand);
       if (res.data.dealer_hand) setDealerHand(res.data.dealer_hand);
+      setCompletedHands(res.data.player_hands ?? []);
+      setCompletedHandResults(res.data.hand_results ?? []);
       setOutcome(res.data.outcome);
       setMessage(resultMessageFor(res.data));
       setPhase("result");
@@ -133,11 +151,12 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const handleAction = async (endpoint, errorMessage) => {
     setLoading(true);
     try {
-      processActionResponse(await axios.post(endpoint));
+      const res = await axios.post(endpoint);
+      if (mountedRef.current) processActionResponse(res);
     } catch {
-      setError(errorMessage);
+      if (mountedRef.current) setError(errorMessage);
     }
-    setLoading(false);
+    if (mountedRef.current) setLoading(false);
   };
 
   const handleHit    = () => handleAction("/api/hit", "Failed to hit. Try again.");
@@ -148,6 +167,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     setLoading(true);
     try {
       const res = await axios.post("/api/split");
+      if (!mountedRef.current) return;
       setPlayerHand(res.data.player_hand);
       setChips(res.data.chips);
       setHandCount(res.data.hand_count ?? 2);
@@ -156,8 +176,10 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setHandNote("Hand split! Playing Hand 1 first.");
       showReshuffleNotice(res.data);
       fetchHint();
-    } catch { setError("Unable to split. Check your chips and try again."); }
-    setLoading(false);
+    } catch {
+      if (mountedRef.current) setError("Unable to split. Check your chips and try again.");
+    }
+    if (mountedRef.current) setLoading(false);
   };
 
   const handleNextRound = () => {
@@ -172,6 +194,8 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     setActiveHandIndex(0);
     setCanSplit(false);
     setHandNote("");
+    setCompletedHands([]);
+    setCompletedHandResults([]);
     clearError();
   };
 
@@ -179,6 +203,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     setLoading(true);
     try {
       const res = await axios.post("/api/new-game", { name: playerName });
+      if (!mountedRef.current) return;
       setChips(res.data.chips);
       setBet(0);
       setOutcome(null);
@@ -189,9 +214,13 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setActiveHandIndex(0);
       setCanSplit(false);
       setHandNote("");
+      setCompletedHands([]);
+      setCompletedHandResults([]);
       setPhase("betting");
-    } catch { setError("Failed to reset. Try again."); }
-    setLoading(false);
+    } catch {
+      if (mountedRef.current) setError("Failed to reset. Try again.");
+    }
+    if (mountedRef.current) setLoading(false);
   };
 
   const outcomeColor = () => {
@@ -236,12 +265,26 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
         <div className="table-divider" />
 
         <div className="table-player-zone">
-          {playerHand
+          {phase === "result" && completedHands.length > 1 ? (
+            <div className="split-result-hands">
+              {completedHands.map((hand, index) => {
+                const handResult = completedHandResults[index];
+                return (
+                  <div key={index} className="split-result-hand">
+                    <Hand cards={hand.cards} total={hand.total} bust={hand.bust} />
+                    <span className={`split-result-label split-result-${handResult}`}>
+                      Hand {index + 1}: {handResult}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : playerHand
             ? <Hand cards={playerHand.cards} total={playerHand.total} bust={phase === "result" && outcome === "lose"} />
             : <div className="zone-idle"><div className="idle-card" /><div className="idle-card" /></div>}
           <p className="zone-label zone-label-below">
             YOUR HAND
-            {handCount > 1 && (
+            {handCount > 1 && completedHands.length <= 1 && (
               <span className="hand-indicator"> — Hand {activeHandIndex + 1} of {handCount}</span>
             )}
           </p>

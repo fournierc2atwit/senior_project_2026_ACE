@@ -103,6 +103,30 @@
   letter-spacing: 0.05em;
 }
 
+.split-result-hands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.split-result-hand {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.split-result-label {
+  color: var(--cream-dim);
+  font-size: 0.85rem;
+  margin-top: 0.35rem;
+  text-transform: capitalize;
+}
+
+.split-result-win,
+.split-result-blackjack { color: #6fcf97; }
+.split-result-lose { color: #eb5757; }
+
 .zone-placeholder {
   color: rgba(200,185,138,0.3);
   font-style: italic;

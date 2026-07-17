@@ -1,8 +1,9 @@
 import unittest
 from unittest.mock import patch
 
-from backend.app import app
+from backend.app import app, load_deck, save_deck
 from backend.game.blackjack.card import Card
+from backend.game.blackjack.deck import Deck
 
 
 def scripted_deck(*deal_order):
@@ -43,6 +44,25 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual("new player", data["name"])
         self.assertEqual(1000, data["chips"])
         self.assertFalse(data["returning"])
+
+    def test_tutorial_restore_uses_saved_player_stats(self):
+        saved = ("player", 750, 4, 2, 1, 7, 1)
+        with patch("backend.app.get_player_stats", return_value=saved):
+            response = self.client.post("/api/new-game", json={
+                "name": "Player",
+                "restore_session": True,
+                "chips": 999999,
+                "wins": 999,
+            })
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(750, data["chips"])
+        with self.client.session_transaction() as session:
+            self.assertEqual(4, session["wins"])
+            self.assertEqual(2, session["losses"])
+            self.assertEqual(1, session["pushes"])
+            self.assertEqual(1, session["bankrupts"])
 
     def test_new_game_rejects_non_text_name(self):
         response = self.client.post("/api/new-game", json={"name": 42})
@@ -155,6 +175,26 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual(900, data["chips"])
         self.assertEqual(2, len(data["player_hand"]["cards"]))
 
+    def test_split_result_includes_each_hand_and_outcome(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "8"), Card("Hearts", "10"),
+            Card("Diamonds", "8"), Card("Clubs", "6"),
+            Card("Spades", "10"), Card("Hearts", "9"),
+            Card("Diamonds", "2"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            self.client.post("/api/deal", json={"bet": 50})
+            self.client.post("/api/split")
+            self.client.post("/api/stand")
+            response = self.client.post("/api/stand")
+
+        data = response.get_json()
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(2, len(data["player_hands"]))
+        self.assertEqual(["push", "lose"], data["hand_results"])
+
     def test_double_down_route(self):
         self.client.post("/api/new-game", json={"tutorial": True})
         deck = scripted_deck(
@@ -226,6 +266,20 @@ class BackendApiTestCase(unittest.TestCase):
         response = self.client.post("/api/slots/spin", json={"amount": 25})
         self.assertEqual(400, response.status_code)
         self.assertEqual("error", response.get_json()["status"])
+
+    def test_saved_deck_keeps_dealt_cards_for_reshuffling(self):
+        deck = Deck()
+        for _ in range(37):
+            deck.deal()
+
+        restored = load_deck(save_deck(deck))
+        self.assertEqual(15, restored.cards_remaining())
+        self.assertEqual(37, restored.cards_dealt())
+
+        restored.deal()
+        self.assertTrue(restored.reshuffled)
+        self.assertEqual(51, restored.cards_remaining())
+        self.assertEqual(1, restored.cards_dealt())
 
     def test_repeated_saves_do_not_double_count_a_bankruptcy(self):
         self.client.post("/api/new-game", json={"tutorial": True})

@@ -132,11 +132,13 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         bet_value: betValue,
         amount,
       });
+      if (!mountedRef.current) return;
       setAdvice(res.data.advice);
     } catch (err) {
+      if (!mountedRef.current) return;
       setError(err.response?.data?.message || "Advice is unavailable right now.");
     } finally {
-      setAdviceLoading(false);
+      if (mountedRef.current) setAdviceLoading(false);
     }
   };
 
