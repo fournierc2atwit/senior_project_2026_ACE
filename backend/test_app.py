@@ -252,6 +252,21 @@ class BackendApiTestCase(unittest.TestCase):
             self.assertGreaterEqual(len(data["player_hand"]["cards"]), 3)
             self.assertGreaterEqual(len(data["dealer_hand"]["cards"]), 2)
 
+    def test_double_down_is_rejected_after_a_hit(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "9"), Card("Hearts", "7"),
+            Card("Diamonds", "2"), Card("Clubs", "9"),
+            Card("Spades", "2"),
+        )
+        with patch("backend.app.Deck", deck):
+            self.client.post("/api/deal", json={"bet": 100})
+            self.client.post("/api/hit")
+            response = self.client.post("/api/double")
+
+        self.assertEqual(400, response.status_code)
+        self.assertIn("first two cards", response.get_json()["message"])
+
     def test_roulette_rejects_invalid_bet_value(self):
         self.client.post("/api/new-game", json={"tutorial": True})
         response = self.client.post("/api/roulette/spin", json={

@@ -241,6 +241,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   };
 
   const isBroke = chips === 0;
+  const canDouble = playerHand?.cards?.length === 2;
 
   const handleMenu = async () => {
     try { await axios.post("/api/save"); } catch (err) { console.error("Failed to save before menu", err); }
@@ -369,7 +370,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
           <div className="controls-playing">
             <button className="action-btn btn-hit"    onClick={handleHit}    disabled={loading}>Hit</button>
             <button className="action-btn btn-stand"  onClick={handleStand}  disabled={loading}>Stand</button>
-            <button className="action-btn btn-double" onClick={handleDouble} disabled={loading}>Double Down</button>
+            <button className="action-btn btn-double" onClick={handleDouble} disabled={loading || !canDouble}>Double Down</button>
             {canSplit && (
               <button className="action-btn btn-split" onClick={handleSplit} disabled={loading}>Split</button>
             )}
