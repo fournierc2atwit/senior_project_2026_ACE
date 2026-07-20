@@ -2,8 +2,8 @@
 
 .hud-root {
   position: absolute;
-  top: 1rem;
-  right: 1.5rem;
+  top: calc(1rem + var(--safe-top));
+  right: calc(1.5rem + var(--safe-right));
   z-index: 10;
   display: flex;
   align-items: center;
@@ -51,4 +51,10 @@
   width: 1px;
   height: 28px;
   background: rgba(201,168,76,0.2);
+}
+
+@media (max-width: 520px) {
+  .hud-root { gap: 0.5rem; padding: 0.4rem 0.65rem; }
+  .hud-label { font-size: 0.58rem; letter-spacing: 0.12em; }
+  .hud-chips, .hud-bet { font-size: 1rem; }
 }

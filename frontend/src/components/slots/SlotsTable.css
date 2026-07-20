@@ -12,7 +12,8 @@
 .sm-root {
   position: relative;
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--felt);
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
@@ -47,8 +48,8 @@
 
 .table-menu-btn {
   position: fixed;
-  top: 1rem;
-  left: 1.5rem;
+  top: calc(1rem + var(--safe-top));
+  left: calc(1.5rem + var(--safe-left));
   z-index: 10;
   background: rgba(0,0,0,0.3);
   border: 1px solid var(--gold-dark);
@@ -72,10 +73,25 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  padding: 4rem 1.5rem 2rem;
+  padding: calc(4rem + var(--safe-top)) calc(1.5rem + var(--safe-right)) calc(2rem + var(--safe-bottom)) calc(1.5rem + var(--safe-left));
   width: 100%;
   max-width: 600px;
   flex: 0 0 auto;
+}
+
+@media (max-width: 520px) {
+  .sm-content { gap: 0.75rem; padding-inline: calc(0.75rem + var(--safe-left)) calc(0.75rem + var(--safe-right)); }
+  .sm-machine { width: 100%; padding: 1rem; }
+  .sm-reel-window { gap: clamp(0.3rem, 2vw, 0.75rem); padding: 0.5rem; }
+  .sm-reel { width: calc((100vw - 5rem) / 3); max-width: 90px; height: clamp(88px, 28vw, 110px); }
+  .sm-blur-symbols .sm-symbol { height: clamp(88px, 28vw, 110px); }
+  .sm-bet-row { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); }
+  .sm-bet-btn { padding-inline: 0.5rem; }
+  .sm-action-row { flex-wrap: wrap; justify-content: center; }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .sm-bet-btn:hover:not(:disabled) { transform: none; }
 }
 
 /* ── Machine ─────────────────────────────────────────────────── */
