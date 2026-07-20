@@ -154,7 +154,8 @@
 
 .lb-row {
   display: grid;
-  grid-template-columns: 40px 1fr 100px 80px 90px;
+  grid-template-columns: 40px minmax(120px, 1fr) 100px 80px 90px;
+  min-width: 520px;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(255,255,255,0.04);
   align-items: center;
@@ -175,3 +176,35 @@
 .lb-chips   { font-family: 'Playfair Display', serif; color: var(--gold); font-size: 0.95rem; }
 .lb-played  { color: var(--cream-dim); font-size: 0.9rem; }
 .lb-winrate { color: #6fcf97; font-size: 0.9rem; }
+
+@media (max-width: 600px) {
+  .stats-content { padding-right: 1rem; padding-left: 1rem; }
+
+  .lb-header,
+  .lb-row {
+    grid-template-columns: 24px minmax(0, 1fr) 70px 45px 62px;
+    min-width: 0;
+    column-gap: 0.35rem;
+    padding-right: 0.6rem;
+    padding-left: 0.6rem;
+  }
+
+  .lb-header {
+    font-size: 0.58rem;
+    letter-spacing: 0.06em;
+  }
+
+  .lb-row { min-height: 56px; }
+
+  .lb-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+
+  .lb-you { display: block; }
+  .lb-chips { font-size: 0.78rem; }
+  .lb-played, .lb-winrate { font-size: 0.75rem; text-align: right; }
+}
