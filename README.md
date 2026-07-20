@@ -191,4 +191,8 @@ Contributions are welcome. Please keep the backend/frontend separation intact an
 
 ## License
 
-License details are still being finalized for this project.
+The A.C.E. source code is available under the [MIT License](LICENSE).
+
+### Third-Party Assets
+
+- **Music:** “Jazz Music (Casino Poker Roulette Las Vegas Background Intro Theme)” by MFCC, used under the [Pixabay Content License](https://pixabay.com/music/traditional-jazz-jazz-music-casino-poker-roulette-las-vegas-background-intro-theme-287498/). This music is not covered by the MIT License.
