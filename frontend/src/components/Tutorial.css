@@ -3,9 +3,8 @@
 /* Root reuses table styles */
 .tut-root {
   position: relative;
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
   background-color: #1a4d2e;
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
@@ -20,7 +19,7 @@
 /* Progress dots */
 .tut-progress {
   position: absolute;
-  top: calc(1rem + var(--safe-top));
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -66,7 +65,7 @@
   margin-top: auto;
   background: rgba(10, 25, 15, 0.92);
   border-top: 1px solid rgba(201,168,76,0.3);
-  padding: 1.25rem calc(2rem + var(--safe-right)) calc(1.5rem + var(--safe-bottom)) calc(2rem + var(--safe-left));
+  padding: 1.25rem 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -74,10 +73,6 @@
   backdrop-filter: blur(4px);
 }
 
-@media (max-width: 520px) {
-  .tut-overlay { padding-inline: calc(1rem + var(--safe-left)) calc(1rem + var(--safe-right)); }
-  .tut-actions, .tut-action-row { flex-wrap: wrap; }
-}
 
 .tut-step-label {
   font-size: 0.7rem;

@@ -1,6 +1,5 @@
 .app-shell {
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
   width: 100%;
   background: linear-gradient(135deg, #0f2b1d 0%, #1a4d2e 45%, #123622 100%);
   color: #f0e6cc;
@@ -10,8 +9,8 @@
 
 .app-music-toggle {
   position: fixed;
-  bottom: calc(1rem + var(--safe-bottom));
-  left: calc(1rem + var(--safe-left));
+  bottom: 1rem;
+  left: 1rem;
   z-index: 1000;
   display: inline-flex;
   align-items: center;

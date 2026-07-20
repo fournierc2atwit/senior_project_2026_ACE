@@ -17,8 +17,8 @@
 /* ── Card base ───────────────────────────────────────────────── */
 .card {
   position: relative;
-  width: var(--card-width);
-  height: var(--card-height);
+  width: 84px;
+  height: 120px;
   border-radius: 10px;
   box-shadow:
     0 4px 12px rgba(0,0,0,0.5),

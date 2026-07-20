@@ -15,9 +15,8 @@
 /* ── Root ──────────────────────────────────────────────────────── */
 .table-root {
   position: relative;
-  width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
   background-color: var(--felt);
   background-image:
     repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px),
@@ -58,8 +57,8 @@
 /* ── Menu button ───────────────────────────────────────────────── */
 .table-menu-btn {
   position: absolute;
-  top: calc(1rem + var(--safe-top));
-  left: calc(1.5rem + var(--safe-left));
+  top: 1rem;
+  left: 1.5rem;
   z-index: 10;
   background: rgba(0,0,0,0.3);
   border: 1px solid var(--gold-dark);
@@ -143,8 +142,8 @@
 }
 
 .idle-card {
-  width: var(--card-width);
-  height: var(--card-height);
+  width: 84px;
+  height: 120px;
   border: 1px dashed rgba(201,168,76,0.25);
   border-radius: 8px;
   animation: idlePulse 3s ease-in-out infinite;
@@ -170,7 +169,7 @@
   align-items: center;
   justify-content: center;
   gap: 2.5rem; /* moderate gap between dealer and player */
-  padding: calc(4rem + var(--safe-top)) var(--page-gutter) 4rem; /* clear the fixed header controls */
+  padding: 2rem 0 4rem 0; /* extra bottom padding to keep banners clear of labels */
   min-height: 420px; /* moderate vertical room */
   position: relative; /* for decorative outline */
 }
@@ -274,29 +273,6 @@
   color: var(--gold-light);
 }
 
-@media (max-width: 720px), (max-height: 700px) {
-  .table-play-area {
-    gap: 0.75rem;
-    min-height: auto;
-    padding-top: calc(4.5rem + var(--safe-top));
-    padding-bottom: 1rem;
-  }
-  .table-dealer-zone,
-  .table-player-zone {
-    transform: none;
-    margin: 0;
-    padding: 0.5rem;
-  }
-  .table-dealer-zone > .hand-root,
-  .table-dealer-zone > .zone-idle { margin-top: 0.25rem; }
-  .zone-label { margin-bottom: 0.25rem; }
-  .zone-label-below { margin-top: 0.25rem; }
-  .table-controls { padding-bottom: calc(1rem + var(--safe-bottom)); }
-}
-
-@media (hover: none), (pointer: coarse) {
-  .chip-btn:hover { transform: none; }
-}
 
 .count-banner {
   align-items: center;
