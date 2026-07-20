@@ -273,6 +273,46 @@
   color: var(--gold-light);
 }
 
+@media (max-width: 720px) {
+  .table-root {
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .table-menu-btn {
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  }
+
+  .table-play-area {
+    flex: none;
+    gap: 1rem;
+    min-height: 0;
+    padding: calc(5rem + env(safe-area-inset-top, 0px)) 0.5rem 1rem;
+  }
+
+  .table-dealer-zone,
+  .table-player-zone {
+    margin: 0;
+    padding: 0.5rem;
+    transform: none;
+  }
+
+  .idle-card,
+  .card {
+    width: 64px;
+    height: 92px;
+  }
+
+  .chip-btn {
+    width: 54px;
+    height: 54px;
+  }
+}
+
 
 .count-banner {
   align-items: center;

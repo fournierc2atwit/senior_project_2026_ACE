@@ -55,3 +55,12 @@
 .music-icon {
   font-size: 0.95rem;
 }
+
+/* Keep the floating control clear of iOS Safari's bottom toolbar. */
+@media (max-width: 850px) {
+  .app-music-toggle {
+    bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    left: calc(0.75rem + env(safe-area-inset-left, 0px));
+    padding: 0.5rem 0.65rem;
+  }
+}

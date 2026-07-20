@@ -52,3 +52,15 @@
   height: 28px;
   background: rgba(201,168,76,0.2);
 }
+
+@media (max-width: 720px) {
+  .hud-root {
+    top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    right: calc(0.75rem + env(safe-area-inset-right, 0px));
+    gap: 0.5rem;
+    padding: 0.4rem 0.65rem;
+  }
+
+  .hud-label { font-size: 0.58rem; letter-spacing: 0.12em; }
+  .hud-chips, .hud-bet { font-size: 1rem; }
+}
