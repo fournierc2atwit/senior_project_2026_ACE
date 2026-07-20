@@ -367,5 +367,25 @@
   .sm-reel { width: clamp(68px, 22vw, 90px); height: 96px; }
   .sm-blur-symbols .sm-symbol { height: 96px; }
   .sm-bet-row { display: grid; grid-template-columns: repeat(2, 1fr); width: min(100%, 340px); }
-  .sm-action-row { flex-wrap: wrap; justify-content: center; }
+  .sm-advice {
+    width: min(100%, 520px);
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .sm-advice p { max-width: 100%; }
+
+  .sm-action-row {
+    width: 100%;
+    max-width: 340px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .sm-action-row > button {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
