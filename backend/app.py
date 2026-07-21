@@ -775,6 +775,7 @@ def roulette_spin():
         "payout":       result["payout"],
         "total_return": result["total_return"],
         "chips":        new_chips,
+        "bankrupt":     new_chips <= 0,
         "advice_evaluation": advice_evaluation,
     })
 
@@ -941,6 +942,7 @@ def slots_spin():
         "payout": result["payout"],
         "total_return": result["total_return"],
         "chips": new_chips,
+        "bankrupt": new_chips <= 0,
         "message": result["message"],
         "advice_evaluation": advice_evaluation,
     })

@@ -296,6 +296,16 @@
   font-weight: 700;
 }
 
+.sm-bankrupt-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.85rem;
+  text-align: center;
+}
+
+.sm-bankrupt-hidden { display: none !important; }
+
 .sm-advice {
   width: 100%;
   max-width: 520px;

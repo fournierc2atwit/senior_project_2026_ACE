@@ -243,6 +243,8 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setCompletedHands([]);
       setCompletedHandResults([]);
       setPhase("betting");
+      if (onSetChips) onSetChips(res.data.chips);
+      onNavigate("menu");
     } catch {
       if (mountedRef.current) setError("Failed to reset. Try again.");
     }

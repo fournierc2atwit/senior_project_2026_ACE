@@ -60,6 +60,27 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
     onNavigate("menu");
   };
 
+  const handleReset = async () => {
+    setLoading(true);
+    clearError();
+    try {
+      const res = await axios.post("/api/new-game", { name: playerName });
+      if (!mountedRef.current) return;
+      setChips(res.data.chips);
+      setAmount(BET_TIERS[0]);
+      setResult(null);
+      setAdvice(null);
+      setReels(["cherry", "cherry", "cherry"]);
+      setReelSpinning([false, false, false]);
+      if (onSetChips) onSetChips(res.data.chips);
+      onNavigate("menu");
+    } catch {
+      if (mountedRef.current) setError("Failed to restart. Try again.");
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  };
+
   const handleAdvice = async () => {
     setAdviceLoading(true);
     clearError();
@@ -132,6 +153,8 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
     return result.won ? "result-win" : "result-lose";
   };
 
+  const isBroke = chips <= 0;
+
   return (
     <div className="sm-root">
       <div className="sm-felt" />
@@ -199,8 +222,17 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
           </div>
         )}
 
+        {isBroke && (
+          <div className="sm-bankrupt-panel">
+            <div className="result-message result-lose">You went bankrupt!</div>
+            <button className="btn-deal btn-deal-active" onClick={handleReset} disabled={loading}>
+              {loading ? "Restarting..." : "Start Over"}
+            </button>
+          </div>
+        )}
+
         {/* ── Bet tier selector ── */}
-        <div className="sm-bet-row">
+        <div className={`sm-bet-row ${isBroke ? "sm-bankrupt-hidden" : ""}`}>
           {BET_TIERS.map((tier) => (
             <button
               key={tier}
@@ -213,7 +245,7 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
           ))}
         </div>
 
-        <div className="sm-action-row">
+        <div className={`sm-action-row ${isBroke ? "sm-bankrupt-hidden" : ""}`}>
           <button
             className="sm-advice-btn"
             onClick={handleAdvice}
@@ -230,7 +262,7 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
           </button>
         </div>
 
-        {amount > chips && (
+        {!isBroke && amount > chips && (
           <p className="sm-insufficient">Not enough chips for this bet.</p>
         )}
 

@@ -147,6 +147,25 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
     onNavigate("menu");
   };
 
+  const handleReset = async () => {
+    setLoading(true);
+    clearError();
+    try {
+      const res = await axios.post("/api/new-game", { name: playerName });
+      if (!mountedRef.current) return;
+      setChips(res.data.chips);
+      setAmount(0);
+      setResult(null);
+      setAdvice(null);
+      if (onSetChips) onSetChips(res.data.chips);
+      onNavigate("menu");
+    } catch {
+      if (mountedRef.current) setError("Failed to restart. Try again.");
+    } finally {
+      if (mountedRef.current) setLoading(false);
+    }
+  };
+
   const handleSpin = async () => {
     if (amount === 0)      { setError("Place a bet first.");        return; }
     if (betValue === null) { setError("Select a value to bet on."); return; }
@@ -194,6 +213,8 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
     if (!result) return "";
     return result.won ? "result-win" : "result-lose";
   };
+
+  const isBroke = chips <= 0;
 
   return (
     <div className="rt-root">
@@ -261,7 +282,16 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
       {error && <div className="error-banner">{error}</div>}
 
       {/* ── Controls ── */}
-      <div className="rt-controls">
+      <div className={`rt-controls ${isBroke ? "is-bankrupt" : ""}`}>
+
+        {isBroke && (
+          <div className="rt-bankrupt-panel">
+            <div className="result-message result-lose">You went bankrupt!</div>
+            <button className="btn-deal btn-deal-active" onClick={handleReset} disabled={loading}>
+              {loading ? "Restarting..." : "Start Over"}
+            </button>
+          </div>
+        )}
 
         {advice && (
           <div className="rt-advice" aria-live="polite">
