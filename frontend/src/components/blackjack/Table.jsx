@@ -20,7 +20,6 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [outcome, setOutcome]                 = useState(null);
   const [message, setMessage]                 = useState("");
   const [hint, setHint]                       = useState(null);
-  const [countAdvice, setCountAdvice]         = useState(null);
   const [countStatus, setCountStatus]         = useState(null);
   const [error, setError]                     = useState("");
   const [loading, setLoading]                 = useState(false);
@@ -33,6 +32,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const [deckReshuffled, setDeckReshuffled]   = useState(false);
   const reshuffleTimerRef                     = useRef(null);
   const mountedRef                            = useRef(true);
+  const hintRequestRef                        = useRef(0);
 
   useEffect(() => {
     if (onSetChips) onSetChips(chips);
@@ -43,6 +43,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
     fetchCountStatus();
     return () => {
       mountedRef.current = false;
+      hintRequestRef.current += 1;
       clearTimeout(reshuffleTimerRef.current);
     };
   }, []);
@@ -92,6 +93,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
         setOutcome(res.data.outcome);
         setMessage(resultMessageFor(res.data));
         setPhase("result");
+        hintRequestRef.current += 1;
         setHint(null);
         setHandNote("");
         setLoading(false);
@@ -111,20 +113,30 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   };
 
   const fetchHint = async () => {
+    const requestId = ++hintRequestRef.current;
     try {
-      const [hintResponse, countResponse] = await Promise.all([
-        axios.get("/api/hint"),
-        axios.get("/api/count-advice"),
-      ]);
-      if (mountedRef.current) {
-        setHint(hintResponse.data);
-        setCountAdvice(countResponse.data);
+      const countResponse = await axios.get("/api/count-advice");
+      if (mountedRef.current && requestId === hintRequestRef.current) {
         setCountStatus(countResponse.data.count);
+        setHint({
+          action: countResponse.data.action,
+          explanation: countResponse.data.explanation,
+          isDeviation: countResponse.data.is_deviation,
+          source: "count",
+        });
       }
     } catch {
-      if (mountedRef.current) {
-        setHint(null);
-        setCountAdvice(null);
+      try {
+        const hintResponse = await axios.get("/api/hint");
+        if (mountedRef.current && requestId === hintRequestRef.current) {
+          setHint({ ...hintResponse.data, isDeviation: false, source: "basic" });
+          setCountStatus(null);
+        }
+      } catch {
+        if (mountedRef.current && requestId === hintRequestRef.current) {
+          setHint(null);
+          setCountStatus(null);
+        }
       }
     }
   };
@@ -151,6 +163,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setOutcome(res.data.outcome);
       setMessage(resultMessageFor(res.data));
       setPhase("result");
+      hintRequestRef.current += 1;
       setHint(null);
       setHandNote("");
       return;
@@ -207,6 +220,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   };
 
   const handleNextRound = () => {
+    hintRequestRef.current += 1;
     setPhase("betting");
     setPlayerHand(null);
     setDealerHand(null);
@@ -242,6 +256,7 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       setHandNote("");
       setCompletedHands([]);
       setCompletedHandResults([]);
+      hintRequestRef.current += 1;
       setPhase("betting");
       if (onSetChips) onSetChips(res.data.chips);
       onNavigate("menu");
@@ -327,9 +342,12 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       )}
 
       {hint && phase === "playing" && (
-        <div className="hint-banner">
+        <div className={`hint-banner ${hint.isDeviation ? "hint-deviation" : ""}`}>
           <span className="hint-icon">🤖</span>
           <span className="hint-text">
+            <span className="hint-source">
+              {hint.isDeviation ? "Hi-Lo count deviation" : hint.source === "count" ? "Count-aware strategy" : "Basic strategy"}
+            </span>
             <strong>{hint.action}</strong> — {hint.explanation}
           </span>
         </div>
@@ -338,11 +356,13 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       {countStatus && (
         <div className="count-banner">
           <span className="count-title">Hi-Lo Count</span>
-          <span>RC {countStatus.running_count >= 0 ? "+" : ""}{countStatus.running_count}</span>
-          <span>TC {countStatus.true_count >= 0 ? "+" : ""}{countStatus.true_count}</span>
+          <span>RC {countStatus.running_count_display ?? `${countStatus.running_count >= 0 ? "+" : ""}${countStatus.running_count}`}</span>
+          <span>TC {countStatus.true_count_display ?? `${countStatus.true_count >= 0 ? "+" : ""}${countStatus.true_count}`}</span>
           <span>{countStatus.decks_remaining} decks left</span>
-          {countAdvice && phase === "playing" && (
-            <span className="count-action">Count says: {countAdvice.action}</span>
+          {countStatus.betting && (
+            <span className="count-action">
+              Bet ${countStatus.betting.amount} ({countStatus.betting.units}u, edge {countStatus.betting.edge_percent >= 0 ? "+" : ""}{countStatus.betting.edge_percent}%)
+            </span>
           )}
         </div>
       )}

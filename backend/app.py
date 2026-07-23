@@ -120,7 +120,11 @@ def _count_cards(shoe, cards):
     shoe["counter"].count_cards(cards)
 
 def _count_status():
-    return _get_shoe()["counter"].status()
+    counter = _get_shoe()["counter"]
+    return _count_advisor.count_status(
+        counter.running_count,
+        counter.decks_remaining(),
+    )
 
 def save_player_hands(hands):
     return [save_hand(hand) for hand in hands]
@@ -635,15 +639,13 @@ def count_advice():
         can_double=player_hand.card_count() == 2,
         can_split=player_hand.is_pair(),
     )
-    betting = _count_advisor.betting_advice(count["true_count"])
-
     return jsonify({
         "status": "success",
         "count": count,
         "action": recommendation["action_name"],
         "explanation": recommendation["reason"],
         "is_deviation": recommendation["is_deviation"],
-        "betting": betting,
+        "betting": count["betting"],
     })
 
 
@@ -654,7 +656,7 @@ def count_status():
     return jsonify({
         "status": "success",
         "count": count,
-        "betting": _count_advisor.betting_advice(count["true_count"]),
+        "betting": count["betting"],
     })
 
 
