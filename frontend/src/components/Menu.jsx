@@ -32,7 +32,8 @@ export default function Menu({ onNavigate, onSetName, onSetChips, onSetGame, sel
   }, [name, chips]);
 
   useEffect(() => {
-    setTimeout(() => setReady(true), 100);
+    const readyTimer = setTimeout(() => setReady(true), 100);
+    return () => clearTimeout(readyTimer);
   }, []);
 
   useEffect(() => {

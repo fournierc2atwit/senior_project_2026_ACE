@@ -277,6 +277,8 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
   const canDouble = playerHand?.cards?.length === 2;
 
   const handleMenu = async () => {
+    if (phase === "playing" || loading) return;
+
     try { await axios.post("/api/save"); } catch (err) { console.error("Failed to save before menu", err); }
     onNavigate("menu");
   };
@@ -289,7 +291,13 @@ export default function Table({ onNavigate, onSetChips, playerName, initialChips
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={handleMenu}>← Menu</button>
+      <button
+        className="table-menu-btn"
+        onClick={handleMenu}
+        disabled={phase === "playing" || loading}
+      >
+        ← Menu
+      </button>
 
       <Hud chips={chips} bet={bet} />
 

@@ -38,6 +38,7 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
   const [adviceLoading, setAdviceLoading] = useState(false);
   const mountedRef               = useRef(true);
   const spinTimersRef            = useRef([]);
+  const adviceRequestRef         = useRef(0);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -45,6 +46,7 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
 
     return () => {
       mountedRef.current = false;
+      adviceRequestRef.current += 1;
       spinTimers.forEach(clearTimeout);
     };
   }, []);
@@ -52,15 +54,21 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
   const clearError = () => setError("");
 
   useEffect(() => {
+    adviceRequestRef.current += 1;
     setAdvice(null);
+    setAdviceLoading(false);
   }, [amount]);
 
   const handleMenu = async () => {
+    if (spinning || loading) return;
+
     try { await axios.post("/api/save"); } catch {}
     onNavigate("menu");
   };
 
   const handleReset = async () => {
+    adviceRequestRef.current += 1;
+    setAdviceLoading(false);
     setLoading(true);
     clearError();
     try {
@@ -82,20 +90,27 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
   };
 
   const handleAdvice = async () => {
+    const requestId = ++adviceRequestRef.current;
     setAdviceLoading(true);
     clearError();
     try {
       const res = await axios.post("/api/slots/advice", { amount });
-      if (mountedRef.current) setAdvice(res.data.advice);
+      if (mountedRef.current && requestId === adviceRequestRef.current) {
+        setAdvice(res.data.advice);
+      }
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || requestId !== adviceRequestRef.current) return;
       setError(err.response?.data?.message || "Advice is unavailable right now.");
     } finally {
-      if (mountedRef.current) setAdviceLoading(false);
+      if (mountedRef.current && requestId === adviceRequestRef.current) {
+        setAdviceLoading(false);
+      }
     }
   };
 
   const handleSpin = async () => {
+    adviceRequestRef.current += 1;
+    setAdviceLoading(false);
     setLoading(true);
     setSpinning(true);
     setResult(null);
@@ -163,7 +178,11 @@ export default function SlotMachine({ onNavigate, playerName, initialChips, onSe
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={handleMenu}>
+      <button
+        className="table-menu-btn"
+        onClick={handleMenu}
+        disabled={spinning || loading}
+      >
         ← Menu
       </button>
 

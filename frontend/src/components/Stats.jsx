@@ -9,6 +9,8 @@ export default function Stats({ onNavigate, playerName }) {
   const [error, setError]             = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchAll = async () => {
       setLoading(true);
       try {
@@ -16,14 +18,21 @@ export default function Stats({ onNavigate, playerName }) {
           axios.get("/api/stats"),
           axios.get("/api/leaderboard"),
         ]);
+        if (cancelled) return;
         setPlayerStats(statsRes.data);
         setLeaderboard(lbRes.data.leaderboard || []);
       } catch {
+        if (cancelled) return;
         setError("Failed to load stats.");
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setLoading(false);
     };
     fetchAll();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const winRate = (stats) => {

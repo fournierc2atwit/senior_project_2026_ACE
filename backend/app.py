@@ -121,10 +121,12 @@ def _count_cards(shoe, cards):
 
 def _count_status():
     counter = _get_shoe()["counter"]
-    return _count_advisor.count_status(
+    status = _count_advisor.count_status(
         counter.running_count,
         counter.decks_remaining(),
     )
+    status["cards_seen"] = counter.cards_seen
+    return status
 
 def save_player_hands(hands):
     return [save_hand(hand) for hand in hands]
@@ -338,6 +340,12 @@ def deal():
     Place a bet and deal the opening hand.
     Body: { "bet": 100 }
     """
+    if "player_hands" in session or "player_hand" in session:
+        return jsonify({
+            "status": "error",
+            "message": "Finish the active round before dealing again.",
+        }), 409
+
     data  = request.get_json() or {}
     bet   = data.get("bet", 0)
     chips = session.get("chips", Player.STARTING_CHIPS)

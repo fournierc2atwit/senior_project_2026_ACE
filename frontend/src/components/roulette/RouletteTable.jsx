@@ -67,6 +67,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   const wheelRef                = useRef(null);
   const mountedRef              = useRef(true);
   const spinTimerRef            = useRef(null);
+  const adviceRequestRef        = useRef(0);
   const [wheelRadius, setWheelRadius] = useState(0);
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
 
     return () => {
       mountedRef.current = false;
+      adviceRequestRef.current += 1;
       if (spinTimerRef.current) clearTimeout(spinTimerRef.current);
     };
   }, []);
@@ -99,7 +101,9 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
   }, [chips, onSetChips]);
 
   useEffect(() => {
+    adviceRequestRef.current += 1;
     setAdvice(null);
+    setAdviceLoading(false);
   }, [amount, betType, betValue]);
 
   const clearError = () => setError("");
@@ -124,6 +128,7 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
       return;
     }
 
+    const requestId = ++adviceRequestRef.current;
     setAdviceLoading(true);
     clearError();
     try {
@@ -132,22 +137,28 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
         bet_value: betValue,
         amount,
       });
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || requestId !== adviceRequestRef.current) return;
       setAdvice(res.data.advice);
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || requestId !== adviceRequestRef.current) return;
       setError(err.response?.data?.message || "Advice is unavailable right now.");
     } finally {
-      if (mountedRef.current) setAdviceLoading(false);
+      if (mountedRef.current && requestId === adviceRequestRef.current) {
+        setAdviceLoading(false);
+      }
     }
   };
 
   const handleMenu = async () => {
+    if (spinning || loading) return;
+
     try { await axios.post("/api/save"); } catch {}
     onNavigate("menu");
   };
 
   const handleReset = async () => {
+    adviceRequestRef.current += 1;
+    setAdviceLoading(false);
     setLoading(true);
     clearError();
     try {
@@ -170,6 +181,8 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
     if (amount === 0)      { setError("Place a bet first.");        return; }
     if (betValue === null) { setError("Select a value to bet on."); return; }
 
+    adviceRequestRef.current += 1;
+    setAdviceLoading(false);
     setLoading(true);
     setSpinning(true);
     clearError();
@@ -224,7 +237,13 @@ export default function RouletteTable({ onNavigate, playerName, initialChips, on
       <span className="suit-bl">♣</span>
       <span className="suit-br">♦</span>
 
-      <button className="table-menu-btn" onClick={handleMenu}>← Menu</button>
+      <button
+        className="table-menu-btn"
+        onClick={handleMenu}
+        disabled={spinning || loading}
+      >
+        ← Menu
+      </button>
 
       <Hud chips={chips} bet={amount} />
 

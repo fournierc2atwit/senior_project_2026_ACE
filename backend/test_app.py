@@ -99,6 +99,23 @@ class BackendApiTestCase(unittest.TestCase):
         self.assertEqual("error", data["status"])
         self.assertIn("Invalid bet", data["message"])
 
+    def test_deal_rejects_a_second_deal_during_an_active_round(self):
+        self.client.post("/api/new-game", json={"tutorial": True})
+        deck = scripted_deck(
+            Card("Spades", "10"), Card("Hearts", "7"),
+            Card("Diamonds", "8"), Card("Clubs", "9"),
+        )
+
+        with patch("backend.app.Deck", deck):
+            first_response = self.client.post("/api/deal", json={"bet": 50})
+            second_response = self.client.post("/api/deal", json={"bet": 50})
+
+        self.assertEqual(200, first_response.status_code)
+        self.assertEqual(409, second_response.status_code)
+        self.assertIn("active round", second_response.get_json()["message"])
+        with self.client.session_transaction() as session:
+            self.assertEqual(950, session["chips"])
+
     def test_hit_without_round_returns_400(self):
         response = self.client.post("/api/hit")
         self.assertEqual(400, response.status_code)
